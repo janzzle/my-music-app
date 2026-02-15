@@ -340,14 +340,14 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
                 <button onClick={revealTitle} disabled={!stageInfo?.titleHidden} className={`py-3 px-1 rounded-lg text-white text-xs md:text-sm font-bold shadow-lg leading-tight whitespace-nowrap ${!stageInfo?.titleHidden ? 'bg-gray-700 cursor-not-allowed text-gray-500' : 'bg-purple-600 hover:bg-purple-500 animate-pulse'}`}>
                   {!stageInfo?.titleHidden ? "✅ 제목 공개됨" : "✨ 제목 공개"}
                 </button>
-                <button onClick={() => updateStage('voting')} disabled={isVoting || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg ${isVoting || isReady ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-blue-600 hover:bg-blue-500'}`}>
-                  {isVoting ? "✅ 투표 진행 중" : "🗳️ 투표 ON"}
-                </button>
                 <button onClick={() => updateStage('ended')} disabled={isEnded || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg ${isEnded || isReady ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-gray-600 hover:bg-gray-500'}`}>
                   {isEnded ? "✅ 노래 종료됨" : "⏹️ 노래 종료"}
                 </button>
-                <button onClick={revealScore} disabled={adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500 animate-bounce'}`}>
-                  {isReady ? "🚫 대기 중 (공개 불가)" : !stageInfo?.scoreHidden && adminScoreMode === 'blind' ? "✅ 점수 공개됨" : "🎉 최종 점수 발표"}
+                <button onClick={revealScore} disabled={adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg transition-all ${adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500 animate-bounce'}`}>
+                  {isReady ? "🚫 대기 중" : !stageInfo?.scoreHidden && adminScoreMode === 'blind' ? "✅ 점수 공개됨" : "🎉 점수 발표"}
+                </button>
+                <button onClick={async () => { if(!adminChallengeId) return alert("적용된 신청곡이 없습니다."); if(!window.confirm("이 무대를 완료 처리하시겠습니까? (통계에 즉시 반영됩니다)")) return; try { await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'completed' }); alert("무대 완료 처리가 되었습니다."); } catch(e) { console.error(e); alert("오류가 발생했습니다."); } }} disabled={isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 animate-pulse'}`}>
+                  🏁 무대 완료 처리 (통계 반영)
                 </button>
                 <div className="flex gap-1 col-span-2 mt-2">
                   <button onClick={() => toggleMaintenance(true)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${stageInfo?.maintenance ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔒 정비 모드 ON</button>
