@@ -3,6 +3,8 @@ import { User } from 'lucide-react';
 import VoteModal from '../components/audience/VoteModal';
 // 👇 [추가] 카운트다운 컴포넌트 가져오기
 import CountdownOverlay from '../components/common/CountdownOverlay';
+import AudienceGrid from '../components/common/AudienceGrid';
+import RankingBoard from '../components/common/RankingBoard';
 // 👇 [추가] Firebase 연동을 위한 함수 가져오기
 import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -258,94 +260,16 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
         </div>
       </div>
 
-      {/* 3. 객석 (인원수에 따른 동적 스케일링 & 도전자 하이라이트 & 타이틀 테두리 적용) */}
+      {/* 3. 객석 (공통 컴포넌트로 대체됨) */}
       <div className="w-full flex items-start justify-center pt-4 md:pt-20 relative z-10 shrink-0 md:flex-1">
-        
-        {/* 👇 [핵심] 인원수에 따른 CSS 동적 계산 로직 */}
-        {(() => {
-          const count = audienceList?.length || 0;
-          let gridClass = "grid-cols-4 md:grid-cols-6 gap-2 md:gap-3";
-          let scaleClass = "scale-90 md:scale-110";
-
-          if (count > 50) {
-            gridClass = "grid-cols-8 md:grid-cols-12 gap-1 md:gap-2";
-            scaleClass = "scale-50 md:scale-75"; // 인원이 많으면 팍 줄임
-          } else if (count > 24) {
-            gridClass = "grid-cols-6 md:grid-cols-10 gap-1.5 md:gap-2";
-            scaleClass = "scale-75 md:scale-90"; // 중간 정도 줄임
-          }
-
-          return (
-            <div className={`grid ${gridClass} transform ${scaleClass} origin-top transition-all duration-500`}>
-              {(audienceList || []).map((u) => {
-                // 🚨 블라인드 모드라도 '본인(isMe)'의 형광등은 보이도록 수정
-                const isMe = user?.uid && u?.id === user?.uid;
-                const showLight = isBlindActive ? isMe : (u?.voted || u.voted);
-                
-                const isChallenger = stageInfo?.challengerUid === u?.id && (stageInfo?.status === 'playing' || stageInfo?.status === 'voting');
-                
-                // 🚨 닉네임 기준으로 매칭하여 테스트 계정 뱃지도 완벽하게 띄움
-                const dRank = (dailyTopUsers || []).findIndex(t => t.name === u?.name);
-                const mRank = (monthlyTopUsers || []).findIndex(t => t.name === u?.name);
-
-                const isDailyTop1 = dRank === 0;
-                const isDailyTop2 = dRank === 1;
-                const isDailyTop3 = dRank === 2;
-                const isMonthlyTop = mRank !== -1 && mRank < 3; // 월간 1,2,3위만
-                const currentMonthNum = new Date().getMonth() + 1;
-
-                let borderColors = "border-gray-600 bg-gray-800/80"; // 기본 (약간 어둡게)
-                if (isMe) borderColors = "border-blue-400 bg-blue-500/20"; // 본인 색상
-                
-                let ringColors = "";
-                if (isDailyTop1) ringColors = "ring-2 ring-yellow-400/70 shadow-[0_0_8px_rgba(250,204,21,0.4)]";
-                else if (isDailyTop2) ringColors = "ring-2 ring-gray-300/70 shadow-[0_0_8px_rgba(209,213,219,0.4)]";
-                else if (isDailyTop3) ringColors = "ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(251,146,60,0.4)]";
-
-                return (
-                  <div key={u?.id || Math.random()} className="relative group flex flex-col items-center mt-10">
-                    
-                    {/* 도전자 아우라 */}
-                    {isChallenger && (
-                      <div className="absolute inset-0 bg-fuchsia-500/20 blur-xl rounded-full scale-150 animate-pulse z-0"></div>
-                    )}
-
-                    {/* 형광등 스케치북 */}
-                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 w-20">
-                      <div className={`
-                        w-12 h-8 bg-gray-800 rounded-md border-2 border-gray-600 shadow-xl flex gap-0.5 p-0.5 mb-1 transform transition-all duration-500
-                        ${showLight ? 'scale-110 opacity-100' : 'scale-90 opacity-0'}
-                      `}>
-                        <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isUnknown ? 'bg-cyan-400 shadow-[0_0_10px_cyan]' : 'bg-gray-700 opacity-20'}`}></div>
-                        <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isLike ? 'bg-pink-500 shadow-[0_0_10px_pink]' : 'bg-gray-700 opacity-20'}`}></div>
-                      </div>
-                      <div className={`flex justify-between w-8 relative z-10 transition-all duration-500 ${showLight ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                        <div className="w-1 h-5 bg-gray-300 border border-gray-400 rounded-full transform -rotate-[20deg] origin-bottom"></div>
-                        <div className="w-1 h-5 bg-gray-300 border border-gray-400 rounded-full transform rotate-[20deg] origin-bottom"></div>
-                      </div>
-                    </div>
-                    
-                    {/* 캐릭터 아이콘 (타이틀 테두리 적용) */}
-                    <div className={`relative z-20 p-2 rounded-full mb-1 border transition-colors ${borderColors} ${ringColors} ${isChallenger ? 'ring-4 ring-pink-400/50' : ''}`}>
-                      <User size={18} className={isMe ? 'text-blue-200' : isDailyTop1 ? 'text-yellow-500' : isDailyTop2 ? 'text-gray-300' : isDailyTop3 ? 'text-orange-400' : 'text-gray-400'} />
-                      
-                      {/* 왕관/메달 마크 */}
-                      {isDailyTop1 && <div className="absolute -top-3 -right-2 text-lg drop-shadow-md">👑</div>}
-                    </div>
-                    
-                    {/* 이름표 및 🚨 월간 태그 결합 */}
-                    <div className="relative flex items-center z-20">
-                      {isMonthlyTop && <span className="absolute -left-5 bg-indigo-500 text-white text-[9px] font-black px-1 py-0.5 rounded shadow-md z-30">{currentMonthNum}월</span>}
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold tracking-tighter truncate max-w-[60px] border ${isMe ? 'bg-blue-600 text-white border-blue-400' : isChallenger ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_10px_#ec4899]' : 'bg-black/60 text-white border-white/20 backdrop-blur-sm'}`}>
-                        {u?.name || '익명'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
+        <AudienceGrid 
+          audienceList={audienceList} 
+          stageInfo={stageInfo} 
+          isBlindActive={isBlindActive} 
+          dailyTopUsers={dailyTopUsers} 
+          monthlyTopUsers={monthlyTopUsers} 
+          currentUser={user} 
+        />
       </div>
 
       {/* 하단 UI 컨테이너 (창 높이가 작아져도 서로 부딪히지 않는 반응형 배열) */}
@@ -379,39 +303,8 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
           )}
         </div>
 
-        {/* 우측: 순위표 */}
-        <div className="bg-black/80 border-2 border-gray-600 p-4 rounded-xl shadow-2xl w-[90%] max-w-sm md:w-80 backdrop-blur-md shrink-0">
-          <h3 className="text-green-400 text-lg md:text-xl font-bold mb-3 md:mb-4 border-b-2 border-gray-500 pb-2 flex justify-between items-center">
-            <span>🏆 실시간 순위</span>
-          </h3>
-          {/* 리스트 내용은 동일 */}
-          {/* 👇 [수정] 기존 가짜 <ul> 태그 전체를 아래 코드로 교체하세요 */}
-          <ul className="space-y-3">
-            {(!leaderboard || leaderboard.length === 0) ? (
-              <li className="text-gray-400 text-sm text-center py-4">아직 집계된 순위가 없습니다.</li>
-            ) : (
-              leaderboard.map((item, idx) => (
-                <li key={item?.stageId || idx} className="flex items-center justify-between border-b border-gray-700/50 pb-2 animate-fade-in-up">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    {/* 1등은 노란색, 2등은 은색, 3등은 동색 */}
-                    <span className={`font-bold italic text-lg md:text-xl ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : 'text-orange-400'}`}>
-                      {idx + 1}
-                    </span>
-                    <div className="flex flex-col">
-                      <span className="text-white font-bold text-sm md:text-base leading-tight truncate max-w-[140px] md:max-w-[200px]">
-                        {item.songTitle}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="bg-gray-700 px-2 py-1 rounded text-white text-xs md:text-sm font-mono shadow-inner whitespace-nowrap">
-                    {item.points}점
-                  </span>
-                </li>
-              ))
-            )}
-          </ul>
-          {/* 👆 여기까지 교체 */}
-        </div>
+        {/* 우측: 순위표 (공통 컴포넌트로 대체됨) */}
+        <RankingBoard leaderboard={leaderboard} />
       </div>
       {/* 👇 [수정] 관리자 전용 리모컨 팝업 - isAdmin이 true일 때만 전체 출력 */}
       {isAdmin && (
