@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+/* 글자 스르륵 효과 */
+@keyframes slowFadeIn {
+  0% { opacity: 0; filter: blur(10px); transform: scale(0.95); }
+  100% { opacity: 1; filter: blur(0px); transform: scale(1); }
+}
+.animate-slow-reveal {
+  animation: slowFadeIn 2.5s ease-out forwards;
+}
+
+/* 숫자 변경 시 쫀득하게 팝업되는 효과 */
+@keyframes numberPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  40% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-number-pop {
+  animation: numberPop 0.5s ease-out forwards;
+}
+
+
+/* 👇 흐린(투명한) 상태에서 밝고 선명하게 나타나는 애니메이션 */
+@keyframes customFadeIn {
+  0% { opacity: 0; filter: blur(10px); }
+  100% { opacity: 1; filter: blur(0px); }
+}
+
+.animate-custom-fade-in {
+  animation: customFadeIn 1.5s ease-out forwards;
+}

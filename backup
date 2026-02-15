@@ -1,0 +1,128 @@
+  // --- 컴포넌트: 로그인 페이지 ---
+  const LoginPage = () => {
+    
+    // ❌ 여기서 signupData를 다시 선언하지 않음 (부모 상태 사용)
+    const [showTooltip, setShowTooltip] = useState(false);
+
+    const handleAuthAction = () => {
+      if (isSignupMode) {
+        const isOnlyConsonant = /^[ㄱ-ㅎㅏ-ㅣ]+$/;
+        const isRepeatedChar = /(.)\1\1\1/;
+
+        if (isOnlyConsonant.test(name)) {
+          alert("닉네임은 완성된 한글로 입력해야 합니다.");
+          return;
+        }
+        if (isRepeatedChar.test(name)) {
+          alert("동일 문자를 4회 이상 연속해서 사용할 수 없습니다.");
+          return;
+        }
+        if (!name || !signupData.age) {
+          alert("닉네임과 나이대를 모두 입력해주세요.");
+          return;
+        }
+        if (!signupData.gender) {
+          alert("성별을 선택해주세요.");
+          return;
+        }
+      }
+
+      if (pw.length < 4 || pw.length > 12) {
+        alert("암호는 4자리에서 12자리 사이로 설정해주세요.");
+        return;
+      }
+      
+      if (isSignupMode) {
+        const newUser = { name, pw, age: signupData.age, gender: signupData.gender };
+        const prevUsers = JSON.parse(localStorage.getItem('userList') || '[]');
+        localStorage.setItem('userList', JSON.stringify([...prevUsers, newUser]));
+
+        setUser(newUser); 
+        setCurrentPage('audience'); 
+        alert(`${name}님, 가입을 축하합니다!`);
+      } else {
+        handleLogin(name, pw); 
+      }
+    };
+
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white p-6 font-sans">
+        <div className="w-full max-w-sm bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700 relative overflow-hidden">
+          <div className="flex justify-center mb-6">
+            <div className="p-4 bg-indigo-600 rounded-full shadow-lg">
+              <Lock size={32} />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-center mb-6">{isSignupMode ? '회원가입' : '입장하기'}</h2>
+          <div className="space-y-4">
+            <div className="relative">
+              <label className="block text-sm text-gray-400 mb-1">닉네임</label>
+              <input 
+                type="text" value={name} 
+                onFocus={() => isSignupMode && setShowTooltip(true)}
+                onBlur={() => setShowTooltip(false)}
+                onChange={(e) => setName(e.target.value)} 
+                className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:border-indigo-500 outline-none text-white" 
+                placeholder="닉네임 입력" 
+              />
+              {isSignupMode && showTooltip && (
+                <div className="absolute z-10 -top-12 left-0 w-full bg-indigo-600 text-white text-[10px] p-2 rounded shadow-lg animate-fade-in-down">
+                  <p>• 완성된 한글 조합 가능</p>
+                  <p>• 동일 문자 4회 연속 및 자/모음 단독 입력 불가</p>
+                  <div className="absolute -bottom-1 left-4 w-2 h-2 bg-indigo-600 rotate-45"></div>
+                </div>
+              )}
+            </div>
+            {isSignupMode && (
+              <>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">나이</label>
+                  <select
+                    value={signupData.age}
+                    onChange={(e) => setSignupData(prev => ({ ...prev, age: e.target.value }))}
+                    className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:border-indigo-500 outline-none text-white"
+                  >
+                    <option value="" disabled>나이대 선택</option>
+                    {ageOptions.map((age) => (
+                      <option key={age} value={age} className="bg-gray-800">{age}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">성별</label>
+                  <div className="flex gap-2">
+                    {['male', 'female'].map((g) => (
+                      <button 
+                        key={g} type="button"
+                        onClick={() => setSignupData(prev => ({ ...prev, gender: g }))} 
+                        className={`flex-1 py-2 rounded font-bold transition-all border ${signupData.gender === g ? 'bg-indigo-600 border-indigo-400 text-white shadow-inner' : 'bg-gray-700 border-gray-600 text-gray-400'}`}
+                      >
+                        {g === 'male' ? '남성' : '여성'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">로그인 암호 (4~12자리)</label>
+              <input
+                type="password" value={pw} onChange={(e) => setPw(e.target.value)} maxLength={12}
+                className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:border-indigo-500 outline-none text-white tracking-widest text-center text-lg font-mono"
+                placeholder="****"
+              />
+            </div>
+            <button onClick={handleAuthAction} className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg font-bold text-lg mt-4 transition shadow-lg active:scale-95">
+              {isSignupMode ? '가입하기' : '입장하기'}
+            </button>
+            <p className="text-center text-sm text-gray-400 mt-4">
+              {isSignupMode ? '이미 계정이 있으신가요?' : '처음 오셨나요?'}
+              <button onClick={() => { setIsSignupMode(!isSignupMode); setPw(''); }} className="ml-2 text-indigo-400 font-bold hover:underline">
+                {isSignupMode ? '로그인' : '회원가입'}
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };

@@ -1,0 +1,11 @@
+.maintenance-layer {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+  color: white; z-index: 10000;
+  display: flex; justify-content: center; align-items: center;
+}
+.toast-box {
+  position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+  background: #ff4500; color: white; padding: 15px 30px;
+  border-radius: 30px; font-size: 1.5rem; z-index: 10001;
+}
