@@ -72,6 +72,7 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
         await setDoc(doc(db, "users_map", name), { uid: user.uid });
 
         alert(`${name}님, 가입을 축하합니다!`);
+        window.location.reload(); // 🚨 가입 직후 DB 연동 완벽 동기화를 위해 강제 새로고침
       } else {
         // --- [로그인] ---
         // ⚡️ DB 조회 없이 바로 로그인 시도! (여기가 빨라진 이유)

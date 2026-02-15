@@ -30,6 +30,7 @@ export default function MusicPlatformApp() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [liveLeaderboard, setLiveLeaderboard] = useState([]); // 🚨 백그라운드 집계용
   const [audienceList, setAudienceList] = useState([]);
+  const [allUsers, setAllUsers] = useState([]); // 🚨 객석에 앉힐 전체 가입자 명단
   // 🚨 일간/월간 Top 3 유저 판별용 상태
   const [dailyTopUsers, setDailyTopUsers] = useState([]);
   const [monthlyTopUsers, setMonthlyTopUsers] = useState([]);
@@ -70,7 +71,17 @@ export default function MusicPlatformApp() {
     });
     return () => unsub();
   }, []);
-  // 🚨 수동 업데이트된 '현재 순위'를 DB에서 가져와 화면에 표시 (자동업데이트 방지)
+  // 🚨 전체 가입자를 실시간으로 불러와 객석을 채우기
+  useEffect(() => {
+    const q = query(collection(db, "users"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const users = [];
+      snapshot.forEach(docSnap => users.push(docSnap.data()));
+      setAllUsers(users);
+    });
+    return () => unsub();
+  }, []);
+    // 🚨 수동 업데이트된 '현재 순위'를 DB에서 가져와 화면에 표시
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "stage", "ranking"), (docSnap) => {
       if (docSnap.exists()) setLeaderboard(docSnap.data().list || []);
@@ -191,36 +202,34 @@ export default function MusicPlatformApp() {
     setLiveLeaderboard(sorted);
   }, [allVotes, stageInfo]);
 
-  // 5. 실시간 형광등(객석) 연동
+  // 5. 실시간 형광등(객석) 연동 (전체 가입자 기반)
   useEffect(() => {
     const currentVotes = allVotes.filter(v => v.stageId === stageInfo.stageId);
-    // 🚨 본인의 실제 UID를 부여하여 랭킹 뱃지 및 색상이 정상 연동되도록 수정
-    const myUser = { id: user?.uid || 0, name: user?.name || "나", voted: false, choices: { isUnknown: false, isLike: false } };
-    const others = [];
-
-    currentVotes.forEach(data => {
-      if (user && data.uid === user.uid) { 
-        myUser.voted = true; 
-        // 🚨 choices 방어 적용
-        myUser.choices = data.choices || { isUnknown: false, isLike: false }; 
-      } else { 
-        others.push(data); 
-      }
-    });
-
-    const newAudience = [myUser];
     
-    // 🚨 더미 데이터(가짜 관객 17명 생성)를 삭제하고 실제 투표한 참여자만 객석에 추가합니다.
-    others.forEach((voteData, index) => {
+    // 1. 내 캐릭터를 1번 자리에 무조건 고정
+    const myVote = currentVotes.find(v => v.uid === user?.uid);
+    const newAudience = [{
+      id: user?.uid || 0,
+      name: user?.name || "나",
+      voted: !!myVote,
+      choices: myVote ? myVote.choices : { isUnknown: false, isLike: false }
+    }];
+
+    // 2. 다른 모든 가입자들을 뒤이어 착석 (투표를 안 했어도 자리는 보이도록)
+    allUsers.forEach(u => {
+      if (user && u.uid === user.uid) return; // '나'는 1번에 앉았으니 패스
+      
+      const voteData = currentVotes.find(v => v.uid === u.uid);
       newAudience.push({
-        id: voteData.uid || index + 1,
-        name: voteData.name || `User${index + 1}`,
-        voted: true,
-        choices: voteData.choices || { isUnknown: false, isLike: false }
+        id: u.uid,
+        name: u.name || '익명',
+        voted: !!voteData,
+        choices: voteData ? voteData.choices : { isUnknown: false, isLike: false }
       });
     });
+
     setAudienceList(newAudience);
-  }, [allVotes, stageInfo.stageId, user]);
+  }, [allUsers, allVotes, stageInfo.stageId, user]);
 
   const handleLogout = async () => {
     await signOut(auth);
