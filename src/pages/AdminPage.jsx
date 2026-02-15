@@ -281,6 +281,25 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
     return allChallenges.filter(c => c.artist === artist && c.song === song && (c.status === 'completed' || c.status === 'playing')).length;
   };
 
+  // 🚨 무대 상태 수동 정정 (통계 관리 반영) - 드롭다운 선택 시 즉시 확인
+  const handleUpdateChallengeStatus = async (id, newStatus) => {
+    let statusName = '';
+    if (newStatus === 'pending') statusName = '⏳ 대기중 (단순신청)';
+    else if (newStatus === 'playing') statusName = '▶️ 카운트/진행중';
+    else if (newStatus === 'completed') statusName = '✅ 완료됨';
+
+    if (!window.confirm(`정말 이 신청곡을 [${statusName}] 상태로 변경하시겠습니까?`)) return;
+    
+    try {
+      await updateDoc(doc(db, "challenges", id), { status: newStatus });
+    } catch (error) {
+      console.error(error);
+      alert("상태 변경 중 오류가 발생했습니다.");
+    }
+  };
+  
+  const [statsDateSearch, setStatsDateSearch] = useState(''); // 🚨 통계 달력 검색 통일
+
   const completeChallenge = async (id) => {
     if (!window.confirm("이 신청곡을 [도전 완료(재생됨)] 처리하시겠습니까?\n(통계의 '도전 시작 곡' 카운트에 반영됩니다)")) return;
     await updateDoc(doc(db, "challenges", id), { status: 'completed' });
@@ -419,12 +438,12 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <h2 className="text-xl font-bold text-blue-400 flex items-center gap-2"><BarChart size={20} /> 무대 기록 관리 (집계 완료 데이터)</h2>
             <div className="flex flex-wrap gap-2">
-              <input type="text" value={recordArtistSearch} onChange={(e) => setRecordArtistSearch(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm outline-none text-white w-28" />
-              <input type="text" value={recordSongSearch} onChange={(e) => setRecordSongSearch(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm outline-none text-white w-32" />
-              <input type="date" value={recordDateSearch} onChange={(e) => setRecordDateSearch(e.target.value)} className="bg-white border-2 border-indigo-400 rounded px-2 py-1 text-sm outline-none text-black font-bold cursor-pointer shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
+              <input type="text" value={recordArtistSearch} onChange={(e) => setRecordArtistSearch(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all shadow-inner" />
+              <input type="text" value={recordSongSearch} onChange={(e) => setRecordSongSearch(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all shadow-inner" />
+              <input type="date" value={recordDateSearch} onChange={(e) => setRecordDateSearch(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-36 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all cursor-pointer shadow-inner" />
             </div>
           </div>
-          <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">
+          <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-175">
             <table className="w-full text-left text-sm text-gray-300 min-w-[800px]">
               <thead className="bg-black text-gray-400 uppercase text-xs sticky top-0 z-10 shadow-md">
                 <tr>
@@ -480,34 +499,17 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
             <h2 className="text-xl font-bold text-pink-400 flex items-center gap-2"><BarChart size={20} /> 도전 신청곡 통계 관리</h2>
             
             <div className="flex flex-wrap items-center gap-2">
-              <input type="text" value={statsSearchArtist} onChange={(e) => setStatsSearchArtist(e.target.value)} placeholder="🔍 가수" className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm outline-none w-24 text-white focus:border-pink-400" />
-              <input type="text" value={statsSearchSong} onChange={(e) => setStatsSearchSong(e.target.value)} placeholder="🔍 제목" className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm outline-none w-24 text-white focus:border-pink-400" />
-              <input type="text" value={statsSearchChallenger} onChange={(e) => setStatsSearchChallenger(e.target.value)} placeholder="🔍 신청자" className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-sm outline-none w-24 text-white focus:border-pink-400" />
+              <input type="text" value={statsSearchArtist} onChange={(e) => setStatsSearchArtist(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
+              <input type="text" value={statsSearchSong} onChange={(e) => setStatsSearchSong(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
+              <input type="text" value={statsSearchChallenger} onChange={(e) => setStatsSearchChallenger(e.target.value)} placeholder="🔍 신청자 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
+              <input type="date" value={statsDateSearch} onChange={(e) => setStatsDateSearch(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-36 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-inner" />
               
-              <select value={statsStatusFilter} onChange={(e) => setStatsStatusFilter(e.target.value)} className="bg-gray-700 text-xs text-white border border-gray-500 rounded px-2 py-1.5 outline-none cursor-pointer">
+              <select value={statsStatusFilter} onChange={(e) => setStatsStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-inner">
                 <option value="all">전체 상태</option>
                 <option value="pending">⏳ 단순 신청</option>
                 <option value="playing">▶️ 진행/카운트</option>
                 <option value="completed">✅ 완료됨</option>
               </select>
-
-              <select value={statsPeriod} onChange={(e) => setStatsPeriod(e.target.value)} className="bg-gray-700 text-xs text-white border border-gray-500 rounded px-2 py-1.5 outline-none cursor-pointer">
-                <option value="all">전체 누적</option>
-                <option value="daily">일간</option>
-                <option value="weekly">주간</option>
-                <option value="monthly">월간</option>
-              </select>
-              
-              {statsPeriod !== 'all' && (
-                <div className="flex items-center bg-gray-700 rounded border border-gray-500">
-                  <button onClick={handleStatsPrev} className="p-1 hover:bg-gray-600 text-gray-300"><ChevronLeft size={14}/></button>
-                  <div className="relative flex items-center px-2 cursor-pointer hover:text-white text-gray-200 font-bold text-xs">
-                    <CalendarIcon size={12} className="text-pink-400 mr-1" /> {getStatsDateTitle()}
-                    <input type={statsPeriod === 'monthly' ? "month" : "date"} className="absolute inset-0 opacity-0 cursor-pointer" onClick={(e) => { try { e.target.showPicker() }catch(e){} }} onChange={(e) => { if(e.target.value) { setStatsDate(new Date(e.target.value + (statsPeriod === 'monthly' ? '-01' : '') + 'T00:00:00')); }}} />
-                  </div>
-                  <button onClick={handleStatsNext} className="p-1 hover:bg-gray-600 text-gray-300"><ChevronRight size={14}/></button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -527,23 +529,13 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
               </thead>
               <tbody>
                 {[...allChallenges].filter(c => {
-                  const d = c.createdAt?.toDate ? c.createdAt.toDate() : new Date();
-                  const rDate = new Date(statsDate);
-                  let inPeriod = true;
-                  if (statsPeriod === 'daily') inPeriod = d.toDateString() === rDate.toDateString();
-                  else if (statsPeriod === 'monthly') inPeriod = d.getMonth() === rDate.getMonth() && d.getFullYear() === rDate.getFullYear();
-                  else if (statsPeriod === 'weekly') {
-                    const start = new Date(rDate); start.setDate(rDate.getDate() - rDate.getDay()); start.setHours(0,0,0,0);
-                    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
-                    inPeriod = d >= start && d <= end;
-                  }
-                  
                   const matchA = c.artist ? c.artist.toLowerCase().includes(statsSearchArtist.toLowerCase()) : true;
                   const matchS = c.song ? c.song.toLowerCase().includes(statsSearchSong.toLowerCase()) : true;
                   const matchC = c.applicantName ? c.applicantName.toLowerCase().includes(statsSearchChallenger.toLowerCase()) : true;
                   const matchStatus = statsStatusFilter === 'all' ? true : c.status === statsStatusFilter;
+                  const matchD = statsDateSearch ? new Date(c.createdAt?.toDate ? c.createdAt.toDate() : c.createdAt).toISOString().startsWith(statsDateSearch) : true;
                   
-                  return inPeriod && matchA && matchS && matchC && matchStatus;
+                  return matchA && matchS && matchC && matchStatus && matchD;
                 }).sort((a, b) => {
                   let valA = a[statsSort.key] || ''; let valB = b[statsSort.key] || '';
                   if (statsSort.key === 'createdAt') { valA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0; valB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0; }
@@ -558,7 +550,11 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     <td className="p-3 text-center text-indigo-300">{item.applicantName || '익명'}</td>
                     <td className="p-3 text-center text-pink-400 font-bold">{allChallenges.filter(c => c.artist === item.artist && c.song === item.song).length}건</td>
                     <td className="p-3 text-center font-bold">
-                       {item.status === 'completed' ? <span className="text-green-400">✅ 완료됨</span> : item.status === 'playing' ? <span className="text-blue-400">▶️ 카운트/진행중</span> : <span className="text-gray-400">⏳ 대기중 (단순신청)</span>}
+                       <select value={item.status || 'pending'} onChange={(e) => handleUpdateChallengeStatus(item.id, e.target.value)} className={`bg-transparent appearance-none border-none outline-none cursor-pointer text-sm font-bold text-center transition-opacity hover:opacity-70 ${item.status === 'completed' ? 'text-green-400' : item.status === 'playing' ? 'text-blue-400' : 'text-gray-400'}`}>
+                         <option value="pending" className="bg-gray-800 text-gray-400">⏳ 대기중 (단순신청)</option>
+                         <option value="playing" className="bg-gray-800 text-blue-400">▶️ 카운트/진행중</option>
+                         <option value="completed" className="bg-gray-800 text-green-400">✅ 완료됨</option>
+                       </select>
                     </td>
                     <td className="p-3 text-center">
                       <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(item.id); }} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16}/></button>
