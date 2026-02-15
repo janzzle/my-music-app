@@ -521,7 +521,6 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                   <th className="p-3 border-b border-gray-700 text-white cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('song')}>제목 {statsSort.key === 'song' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
                   <th className="p-3 border-b border-gray-700 text-center text-indigo-300 cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('applicantName')}>신청자 {statsSort.key === 'applicantName' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
                   <th className="p-3 border-b border-gray-700 text-center text-pink-400">누적 신청 건수</th>
-                  <th className="p-3 border-b border-gray-700 text-center text-pink-400">누적 신청 건수</th>
                   <th className="p-3 border-b border-gray-700 text-center cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('status')}>무대 상태 {statsSort.key === 'status' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
                   <th className="p-3 border-b border-gray-700 text-center">삭제</th>
                 </tr>
