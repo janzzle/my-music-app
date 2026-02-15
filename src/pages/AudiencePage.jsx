@@ -5,6 +5,8 @@ import VoteModal from '../components/audience/VoteModal';
 import CountdownOverlay from '../components/common/CountdownOverlay';
 import AudienceGrid from '../components/common/AudienceGrid';
 import RankingBoard from '../components/common/RankingBoard';
+import StageStatusPanel from '../components/common/StageStatusPanel';
+
 // 👇 [추가] Firebase 연동을 위한 함수 가져오기
 import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -278,30 +280,13 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
         {/* 데스크탑 중앙 정렬용 투명 여백 */}
         <div className="hidden md:block w-80 shrink-0"></div>
 
-        {/* 중앙: 하단 투표 버튼 */}
-        <div className="w-[90%] max-w-sm shrink-0 flex flex-col items-center gap-2">
-          {(stageInfo.status === 'playing' || stageInfo.status === 'voting') ? (
-            !hasVoted ? (
-              <button
-                onClick={() => setShowVoteModal(true)}
-                className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-full font-black shadow-xl border-2 border-white flex items-center justify-center gap-2 hover:scale-105 transition-transform animate-bounce"
-              >
-                <span>🔥 지금은 투표 시간!</span>
-                <span className="text-xs bg-white text-pink-500 px-2 py-0.5 rounded-full">GO</span>
-              </button>
-            ) : (
-              <button disabled className="w-full bg-gray-800 text-green-400 py-3 rounded-full font-bold shadow-lg border border-gray-600 cursor-default flex items-center justify-center gap-2">
-                <span>✅ {stageInfo.songTitle} 투표 완료</span>
-              </button>
-            )
-          ) : (
-            <div className="w-full bg-gray-900/90 border-2 border-gray-600 rounded-xl p-3 text-center shadow-lg backdrop-blur-md flex items-center justify-center h-[52px]">
-              <h2 className="text-sm font-bold text-gray-500 tracking-wider">
-                {stageInfo?.status === 'ended' ? "⛔️ 투표가 종료되었습니다" : "⏳ 다음 곡 대기 중..."}
-              </h2>
-            </div>
-          )}
-        </div>
+        {/* 중앙: 하단 투표 버튼 및 상태 (공통 컴포넌트로 대체됨) */}
+        <StageStatusPanel 
+          stageInfo={stageInfo} 
+          isBroadcast={false} 
+          hasVoted={hasVoted} 
+          onVoteClick={() => setShowVoteModal(true)} 
+        />
 
         {/* 우측: 순위표 (공통 컴포넌트로 대체됨) */}
         <RankingBoard leaderboard={leaderboard} />
@@ -361,8 +346,8 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
                 <button onClick={() => updateStage('ended')} disabled={isEnded || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg ${isEnded || isReady ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-gray-600 hover:bg-gray-500'}`}>
                   {isEnded ? "✅ 노래 종료됨" : "⏹️ 노래 종료"}
                 </button>
-                <button onClick={revealScore} disabled={adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady || isEnded} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady || isEnded ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500 animate-bounce'}`}>
-                  {isReady || isEnded ? "🚫 대기/종료됨 (공개 불가)" : !stageInfo?.scoreHidden && adminScoreMode === 'blind' ? "✅ 점수 공개됨" : "🎉 최종 점수 발표"}
+                <button onClick={revealScore} disabled={adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500 animate-bounce'}`}>
+                  {isReady ? "🚫 대기 중 (공개 불가)" : !stageInfo?.scoreHidden && adminScoreMode === 'blind' ? "✅ 점수 공개됨" : "🎉 최종 점수 발표"}
                 </button>
                 <div className="flex gap-1 col-span-2 mt-2">
                   <button onClick={() => toggleMaintenance(true)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${stageInfo?.maintenance ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔒 정비 모드 ON</button>

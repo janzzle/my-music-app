@@ -3,13 +3,13 @@ import { db } from '../firebase';
 import { doc, setDoc, onSnapshot, collection, query, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { Trash2, CheckCircle, Music, Mic2, BarChart, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit3, Copy } from 'lucide-react';
 
-const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [] }) => {
+const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [], audienceList = [] }) => {
   const [adminArtist, setAdminArtist] = useState('');
   const [adminSong, setAdminSong] = useState('');
   const [stageInfo, setStageInfo] = useState({ status: 'ready', titleHidden: false, scoreHidden: true, maintenance: false });
   const [scoreMode, setScoreMode] = useState('realtime');
   
-  const [activeTab, setActiveTab] = useState('control'); 
+  const [activeTab, setActiveTab] = useState('queue'); 
   const [adminChallengeId, setAdminChallengeId] = useState('');
   const [adminChallengerName, setAdminChallengerName] = useState('');
   const [isApplied, setIsApplied] = useState(false); // 🚨 적용 상태 추가
@@ -46,13 +46,14 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   const [userSearchTerm, setUserSearchTerm] = useState('');
 
   useEffect(() => {
-    const q = query(collection(db, "users"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const fetchUsers = async () => {
+      const q = query(collection(db, "users"));
+      const snapshot = await getDocs(q);
       const users = [];
       snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
       setAllUsers(users);
-    });
-    return () => unsubscribe();
+    };
+    fetchUsers();
   }, []);
 
   const grantTicket = async (userId, currentTickets) => {
@@ -350,9 +351,6 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
       
       {/* 🚨 탭 네비게이션 */}
       <div className="w-full max-w-7xl flex gap-4 md:gap-6 border-b border-gray-700 mb-8 overflow-x-auto shrink-0 scrollbar-hide">
-        <button onClick={() => setActiveTab('control')} className={`font-black text-sm md:text-base pb-3 border-b-4 transition-colors whitespace-nowrap ${activeTab === 'control' ? 'border-yellow-400 text-yellow-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
-          🛠️ 무대 조정
-        </button>
         <button onClick={() => setActiveTab('queue')} className={`font-black text-sm md:text-base pb-3 border-b-4 transition-colors whitespace-nowrap ${activeTab === 'queue' ? 'border-indigo-400 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
           📋 도전 신청곡 목록
         </button>
@@ -367,75 +365,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
         </button>
       </div>
 
-      {activeTab === 'control' ? (
-        /* ================= 1. STAGE CONTROL ================= */
-        <div className="w-full max-w-lg flex flex-col gap-4">
-            <h1 className="text-3xl font-bold text-yellow-400 mb-2 text-center">관리자 조종석</h1>
-            
-            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-                <h2 className="text-gray-400 text-xs mb-2">현재 무대 정보 & 고유값 세팅</h2>
-                {isApplied ? (
-                  <div className="bg-indigo-900/40 border-2 border-indigo-500 p-3 rounded-lg relative mb-4">
-                    <div className="text-white font-black text-sm truncate pr-10">🎵 {adminArtist} - {adminSong}</div>
-                    <div className="text-indigo-300 text-[10px] font-bold mt-1 truncate pr-10">도전자: {adminChallengerName} <span className="text-gray-400">| {adminChallengeId}</span></div>
-                    <button onClick={() => setIsApplied(false)} className="absolute top-2 right-2 text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors shadow">수정</button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 mb-4 w-full">
-                    <div className="flex gap-2 w-full">
-                        <input value={adminArtist} onChange={(e) => setAdminArtist(e.target.value)} className="w-1/2 min-w-0 p-2 bg-gray-800 border border-gray-600 rounded text-sm text-white font-bold outline-none" placeholder="가수명" />
-                        <input value={adminSong} onChange={(e) => setAdminSong(e.target.value)} className="w-1/2 min-w-0 p-2 bg-gray-800 border border-gray-600 rounded text-sm text-white font-bold outline-none" placeholder="곡 제목" />
-                    </div>
-                    <div className="flex gap-2 w-full items-stretch">
-                        <input value={adminChallengerName} onChange={(e) => setAdminChallengerName(e.target.value)} className="w-1/3 min-w-0 p-2 bg-gray-800 border border-indigo-600 rounded text-sm text-indigo-300 font-bold outline-none" placeholder="신청자" />
-                        <input value={adminChallengeId} onChange={(e) => setAdminChallengeId(e.target.value)} className="flex-1 min-w-0 p-2 bg-gray-900 border border-gray-700 rounded text-sm text-gray-500 outline-none" placeholder="고유값" />
-                        <button onClick={handleApplyChallengeId} className="w-12 shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold transition-colors flex items-center justify-center">적용</button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between bg-gray-800 p-2 rounded mb-4 border border-gray-700">
-                  <span className="text-gray-300 text-xs font-bold">🎯 점수 연출</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => { if (stageInfo?.status !== 'ready') return alert("🚫 대기 상태에서 변경해주세요."); setScoreMode('realtime'); }} className={`px-2 py-1 text-[10px] rounded transition-colors ${scoreMode === 'realtime' ? 'bg-yellow-500 text-black font-black' : 'bg-gray-700 text-gray-400'}`}>실시간</button>
-                    <button onClick={() => { if (stageInfo?.status !== 'ready') return alert("🚫 대기 상태에서 변경해주세요."); setScoreMode('blind'); }} className={`px-2 py-1 text-[10px] rounded transition-colors ${scoreMode === 'blind' ? 'bg-purple-600 text-white font-black' : 'bg-gray-700 text-gray-400'}`}>블라인드</button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                    <button onClick={startPerformance} disabled={!isReady} className={`py-3 px-1 rounded-lg text-white text-xs md:text-sm font-bold shadow-lg transition-colors leading-tight whitespace-nowrap ${!isReady ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-green-600 hover:bg-green-500'}`}>
-                        {isReady ? "🚀 카운트 & 시작" : (stageInfo?.status === 'countdown' || stageInfo?.status === 'playing') ? "▶️ 진행 중" : "▶️ 대기 중"}
-                    </button>
-                    <button onClick={() => setDoc(doc(db, 'stage', 'info'), { titleHidden: false }, { merge: true })} disabled={!stageInfo?.titleHidden} className={`py-3 px-1 rounded-lg text-white text-xs md:text-sm font-bold shadow-lg leading-tight whitespace-nowrap ${!stageInfo?.titleHidden ? 'bg-gray-700 cursor-not-allowed text-gray-500' : 'bg-purple-600 hover:bg-purple-500 animate-pulse'}`}>
-                        {!stageInfo?.titleHidden ? "✅ 제목 공개됨" : "✨ 제목 공개"}
-                    </button>
-                    <button onClick={() => updateStage('voting')} disabled={isVoting || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg ${isVoting || isReady ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-blue-600 hover:bg-blue-500'}`}>
-                        {isVoting ? "✅ 투표 진행 중" : "🗳️ 투표 ON"}
-                    </button>
-                    <button onClick={() => updateStage('ended')} disabled={isEnded || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg ${isEnded || isReady ? 'bg-gray-700 cursor-not-allowed text-gray-400' : 'bg-gray-600 hover:bg-gray-500'}`}>
-                        {isEnded ? "✅ 노래 종료됨" : "⏹️ 노래 종료"}
-                    </button>
-                    <button onClick={() => setDoc(doc(db, 'stage', 'info'), { scoreHidden: false }, { merge: true })} disabled={scoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady || isEnded} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${scoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady || isEnded ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500 animate-bounce'}`}>
-                        {isReady || isEnded ? "🚫 대기/종료됨 (공개 불가)" : !stageInfo?.scoreHidden && scoreMode === 'blind' ? "✅ 점수 공개됨" : "🎉 최종 점수 발표"}
-                    </button>
-                    <div className="flex gap-1 col-span-2 mt-2">
-                        <button onClick={() => toggleMaintenance(true)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${stageInfo?.maintenance ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔒 정비 모드 ON</button>
-                        <button onClick={() => toggleMaintenance(false)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${!stageInfo?.maintenance ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔓 정비 OFF</button>
-                    </div>
-                    
-                    {/* 🚨 완벽하게 작동하는 현재 순위 업데이트 수동 버튼 */}
-                    <button onClick={handleUpdateRanking} className="bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-white font-bold text-sm col-span-2 mt-2 shadow-lg">
-                        🏆 현재 순위 업데이트
-                    </button>
-
-                    {/* 🚨 무대 초기화 시 DB 내용까지 완벽 청소 */}
-                    <button onClick={async () => { await setDoc(doc(db, 'stage', 'info'), { status: 'ready', songTitle: '', artist: '', song: '', challengerName: '', challengerUid: '', stageId: '', titleHidden: false, scoreHidden: true, count: null, updatedAt: new Date() }, { merge: true }); setAdminArtist(''); setAdminSong(''); setAdminChallengerName(''); setAdminChallengeId(''); setIsApplied(false); }} className="bg-red-800 p-3 rounded-lg text-white font-bold text-sm hover:bg-red-700 col-span-2 mt-2 shadow-lg">
-                        🔄 무대 초기화 (대기)
-                    </button>
-                </div>
-            </div>
-        </div>
-      ) : activeTab === 'queue' ? (
+      {activeTab === 'queue' ? (
         /* ================= 2. 도전 신청곡 목록 ================= */
         <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-indigo-500/30 p-6 shadow-2xl overflow-hidden">
           <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2 mb-4"><Mic2 size={20} /> 실시간 도전 신청곡 목록 (대기열)</h2>
@@ -654,6 +584,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                 <tr>
                   <th className="p-3 border-b border-gray-700">이름(닉네임)</th>
                   <th className="p-3 border-b border-gray-700">이메일</th>
+                  <th className="p-3 border-b border-gray-700 text-center">접속 상태</th>
                   <th className="p-3 border-b border-gray-700 text-center">권한</th>
                   <th className="p-3 border-b border-gray-700 text-center">보유 추가 티켓</th>
                   <th className="p-3 border-b border-gray-700 text-center">티켓 지급</th>
@@ -661,10 +592,13 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                 </tr>
               </thead>
               <tbody>
-                {allUsers.filter(u => (u.name||'').includes(userSearchTerm) || (u.email||'').includes(userSearchTerm)).map(u => (
+                {allUsers.filter(u => (u.name||'').includes(userSearchTerm) || (u.email||'').includes(userSearchTerm)).map(u => {
+                  const isOnline = audienceList.some(onlineUser => onlineUser.id === u.id);
+                  return (
                   <tr key={u.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
                     <td className="p-3 font-bold text-white">{u.name || '미설정'}</td>
                     <td className="p-3 text-gray-400">{u.email || '없음'}</td>
+                    <td className="p-3 text-center">{isOnline ? <span className="text-green-400 font-bold text-xs">🟢 접속 중</span> : <span className="text-gray-500 text-xs">⚪ 오프라인</span>}</td>
                     <td className="p-3 text-center">{u.isAdmin ? <span className="text-red-400 font-bold">관리자</span> : '일반'}</td>
                     <td className="p-3 text-center font-bold text-yellow-400">{u.extraTickets || 0}장</td>
                     <td className="p-3 text-center">
@@ -672,7 +606,8 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     </td>
                     <td className="p-3 text-[10px] text-gray-500 font-mono">{u.id}</td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

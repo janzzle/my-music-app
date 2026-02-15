@@ -265,8 +265,9 @@ export default function MusicPlatformApp() {
       {currentPage === 'guide' && <GuidePage navigateTo={navigateTo} />}
       {currentPage === 'history' && <HistoryPage />}
       {currentPage === 'challenge' && <ChallengePage />}
-      {currentPage === 'admin' && isAdmin && <AdminPage socket={socket} />}
-
+      {currentPage === 'admin' && isAdmin && (
+        <AdminPage socket={socket} liveLeaderboard={liveLeaderboard} dailyTopUsers={dailyTopUsers} monthlyTopUsers={monthlyTopUsers} audienceList={audienceList} />
+      )}
       <footer className="absolute bottom-0 left-0 w-full bg-black/90 text-gray-500 text-[9px] md:text-[10px] py-4 text-center border-t border-gray-800 flex flex-col items-center justify-center leading-tight">
         <p>본 웹 서비스의 시스템 및 방송 프로그램 구성에 대한 저작권은 <span className="text-gray-300 font-bold">unknown</span>에게 귀속됩니다.</p>
         <p className="mt-0.5 font-mono text-gray-600">

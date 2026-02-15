@@ -3,6 +3,7 @@ import { User } from 'lucide-react';
 import CountdownOverlay from '../components/common/CountdownOverlay';
 import AudienceGrid from '../components/common/AudienceGrid';
 import RankingBoard from '../components/common/RankingBoard';
+import StageStatusPanel from '../components/common/StageStatusPanel';
 
 const BroadcastPage = ({ audienceList = [], stageInfo = {}, socket, leaderboard = [], dailyTopUsers = [], monthlyTopUsers = [] }) => {
   const currentScore = audienceList.reduce((acc, u) => {
@@ -89,22 +90,11 @@ const BroadcastPage = ({ audienceList = [], stageInfo = {}, socket, leaderboard 
         {/* 데스크탑 중앙 정렬을 맞추기 위한 투명 빈 공간 */}
         <div className="hidden md:block w-80 shrink-0"></div>
 
-        {/* 4. 중앙 안내판 */}
-        <div className="w-[90%] max-w-sm shrink-0">
-          {(stageInfo.status === 'playing' || stageInfo.status === 'voting') ? (
-            <div className="relative w-full bg-black/80 border-4 border-pink-500 rounded-xl p-4 text-center shadow-[0_0_30px_#ec4899] animate-bounce-slight flex flex-col items-center">
-              <div className="absolute -top-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg border border-white">NOW VOTING</div>
-              <h2 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-400 tracking-wider drop-shadow-sm">투표 진행 중!</h2>
-              <p className="text-pink-200 text-xs mt-1 font-bold tracking-widest">여러분의 선택을 기다립니다</p>
-            </div>
-          ) : (
-            <div className="w-full bg-gray-900/90 border-2 border-gray-600 rounded-xl p-3 text-center shadow-lg backdrop-blur-md">
-              <h2 className="text-lg md:text-xl font-bold text-gray-500 tracking-wider">
-                {stageInfo.status === 'ended' ? "⛔️ 투표가 종료되었습니다" : "⏳ 다음 곡 대기 중..."}
-              </h2>
-            </div>
-          )}
-        </div>
+        {/* 4. 중앙 안내판 (공통 컴포넌트로 대체됨) */}
+        <StageStatusPanel 
+          stageInfo={stageInfo} 
+          isBroadcast={true} 
+        />
 
         {/* 5. 실시간 순위표 (공통 컴포넌트로 대체됨) */}
         <RankingBoard leaderboard={leaderboard} />

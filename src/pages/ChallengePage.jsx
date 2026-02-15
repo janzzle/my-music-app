@@ -144,8 +144,8 @@ const ChallengePage = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">도전 신청 기회를 모두 사용했습니다!</h2>
           <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
-            매일 1회의 무료 신청 기회가 제공됩니다.<br/>
-            추가 신청을 원하시면 관리자에게 티켓을 요청하세요.
+            매일 1회의 신청 기회가 제공됩니다.<br/>
+            추가 신청을 원하시면 관리자에게 요청하세요.
           </p>
         </div>
       ) : pendingChallenge ? (
@@ -156,8 +156,8 @@ const ChallengePage = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">이미 대기 중인 신청곡이 있습니다!</h2>
           <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
-            관리자가 곡을 승인하여 무대에 올리거나,<br/>
-            대기열에서 삭제할 때까지 새로운 곡을 신청할 수 없습니다.
+            재신청을 원할 경우 내 신청내역에서 삭제 후 다시 신청할 수 있습니다.<br/>
+            
           </p>
 
           <div className="w-full bg-indigo-50 border-2 border-indigo-200 rounded-xl p-5 text-center shadow-inner">

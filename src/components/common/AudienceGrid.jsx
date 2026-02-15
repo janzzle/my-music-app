@@ -17,30 +17,39 @@ const AudienceGrid = ({ audienceList = [], stageInfo = {}, isBlindActive, dailyT
   return (
     <div className={`grid ${gridClass} transform ${scaleClass} origin-top transition-all duration-500`}>
       {(audienceList || []).map((u) => {
-                // 🚨 블라인드 모드 시: '나(isMe)'이면서 '투표를 완료(voted)' 했을 때만 내 불빛이 보임
-                // 주의: props 이름이 currentUser로 넘어오므로 currentUser.uid를 사용합니다.
+                // 🚨 본인 확인 (기본 객석의 '나')
                 const isMe = currentUser?.uid && u?.id === currentUser?.uid;
-                const showLight = isBlindActive ? (isMe && (u?.voted || u.voted)) : (u?.voted || u.voted);
+
+                // 🚨 불빛(형광등) 노출 조건
+                // isBlindActive가 true(블라인드 모드)일 때: 
+                // -> 내가 기본객석의 '나'라면? 내 불빛은 즉시 공개 (isMe && u.voted)
+                // -> 다른 사람이거나 송출용(currentUser 없음)이라면? 점수 공개 후( !scoreHidden )에만 노출
+                // isBlindActive가 false(실시간 모드)일 때: 무조건 투표 즉시 노출 (u.voted)
+                const showLight = isBlindActive 
+                    ? (isMe ? (u?.voted || u.voted) : (!stageInfo?.scoreHidden && (u?.voted || u.voted))) 
+                    : (u?.voted || u.voted);
                 
-                // 🚨 도전자 판별
                 const isChallenger = stageInfo?.challengerUid === u?.id && (stageInfo?.status === 'playing' || stageInfo?.status === 'voting');
                 
-                // 🚨 닉네임 기준으로 매칭하여 테스트 계정(관리자 등) 뱃지도 완벽하게 띄움
+                // 🚨 랭킹 확인 (닉네임 기준으로 매칭)
                 const dRank = (dailyTopUsers || []).findIndex(t => t.name === u?.name);
                 const mRank = (monthlyTopUsers || []).findIndex(t => t.name === u?.name);
 
                 const isDailyTop1 = dRank === 0;
                 const isDailyTop2 = dRank === 1;
                 const isDailyTop3 = dRank === 2;
-                const isMonthlyTop = mRank !== -1 && mRank < 3; // 월간 1,2,3위만
+                
+                const isMonthlyTop1 = mRank === 0;
+                const isMonthlyTop2 = mRank === 1;
+                const isMonthlyTop3 = mRank === 2;
+                const isMonthlyTop = mRank !== -1 && mRank < 3; 
                 const currentMonthNum = new Date().getMonth() + 1;
 
-                let borderColors = "border-gray-500/30 bg-gray-800/60"; // 기본 (약간 어둡게)
-                
-                let ringColors = "";
-                if (isDailyTop1) ringColors = "ring-2 ring-yellow-400/70 shadow-[0_0_8px_rgba(250,204,21,0.4)]";
-                else if (isDailyTop2) ringColors = "ring-2 ring-gray-300/70 shadow-[0_0_8px_rgba(209,213,219,0.4)]";
-                else if (isDailyTop3) ringColors = "ring-2 ring-orange-400/70 shadow-[0_0_8px_rgba(251,146,60,0.4)]";
+                // 🚨 월간 1, 2, 3위에 따른 뱃지 색상 (좌측 부착)
+                let monthlyBadgeStyle = "bg-indigo-500 border-indigo-300 text-white";
+                if (isMonthlyTop1) monthlyBadgeStyle = "bg-gradient-to-r from-yellow-400 to-yellow-600 border-yellow-200 text-black";
+                else if (isMonthlyTop2) monthlyBadgeStyle = "bg-gradient-to-r from-gray-300 to-gray-400 border-gray-100 text-black";
+                else if (isMonthlyTop3) monthlyBadgeStyle = "bg-gradient-to-r from-orange-400 to-orange-600 border-orange-200 text-white";
 
                 return (
                   <div key={u?.id || Math.random()} className="relative group flex flex-col items-center mt-10">
@@ -65,27 +74,24 @@ const AudienceGrid = ({ audienceList = [], stageInfo = {}, isBlindActive, dailyT
                       </div>
                     </div>
                     
-                    {/* 캐릭터 아이콘 (아이콘 테두리 제거 후 심플하게) */}
-                    <div className={`relative z-20 p-1.5 rounded-full mb-1 border transition-colors ${borderColors} ${ringColors} ${isChallenger ? 'ring-2 ring-pink-400/50' : ''}`}>
-                      <User size={16} className={isMe ? 'text-blue-200' : isDailyTop1 ? 'text-yellow-500' : isDailyTop2 ? 'text-gray-300' : isDailyTop3 ? 'text-orange-400' : 'text-gray-400'} />
-                      {/* 왕관 마크 */}
-                      {isDailyTop1 && <div className="absolute -top-3 -right-2 text-base drop-shadow-md z-30">👑</div>}
+                    {/* 🚨 아이콘 박스 (테두리 빛 삭제, '나(isMe)'일 때만 아이콘 안쪽에서 파란 빛 은은하게) */}
+                    <div className={`relative z-20 p-1.5 rounded-full mb-1 border-2 border-gray-700 bg-gray-800 ${isChallenger ? 'ring-2 ring-pink-400/50' : ''} ${isMe ? 'shadow-[0_0_15px_rgba(59,130,246,0.6)]' : ''}`}>
+                      <User size={16} className={isMe ? 'text-blue-400' : 'text-gray-400'} />
                     </div>
                     
-                    {/* 이름표 (🚨 닉네임 테두리에 은은한 랭킹 색상 적용 및 본인 색상 분리) */}
+                    {/* 🚨 이름표 (여기에만 은은한 테두리 빛 적용) */}
                     <div className="relative flex items-center z-20 mt-1">
-                      {isMonthlyTop && <span className="absolute -left-5 -top-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[8px] font-black px-1 py-0.5 rounded shadow-lg transform -rotate-12 z-30 border border-indigo-300">{currentMonthNum}월</span>}
+                      {isMonthlyTop && <span className={`absolute -left-6 -top-2 text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg transform -rotate-12 z-30 border ${monthlyBadgeStyle}`}>{currentMonthNum}월</span>}
                       
-                      <span className={`text-[9px] px-2 py-1 rounded-full font-bold tracking-tighter truncate max-w-[60px] border shadow-sm transition-all
-                        ${isMe ? 'bg-blue-600/90 text-white border-blue-400' : 
-                          isChallenger ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_10px_#ec4899]' : 
-                          isDailyTop1 ? 'bg-black/80 text-yellow-400 border-yellow-500/50 shadow-[0_0_6px_rgba(234,179,8,0.3)]' :
-                          isDailyTop2 ? 'bg-black/80 text-gray-200 border-gray-400/50 shadow-[0_0_6px_rgba(209,213,219,0.3)]' :
-                          isDailyTop3 ? 'bg-black/80 text-orange-300 border-orange-500/50 shadow-[0_0_6px_rgba(249,115,22,0.3)]' :
-                          'bg-black/60 text-white border-gray-600/50 backdrop-blur-sm'
+                      <span className={`text-[9px] px-2 py-1 rounded-full font-bold tracking-tighter truncate max-w-[60px] border transition-all
+                        ${isChallenger ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_10px_#ec4899]' : 
+                          isDailyTop1 ? 'bg-gray-900 text-yellow-400 border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.5)]' :
+                          isDailyTop2 ? 'bg-gray-900 text-gray-200 border-gray-400/60 shadow-[0_0_8px_rgba(209,213,219,0.5)]' :
+                          isDailyTop3 ? 'bg-gray-900 text-orange-300 border-orange-500/60 shadow-[0_0_8px_rgba(249,115,22,0.5)]' :
+                          isMe ? 'bg-blue-600 text-white border-blue-400' : 'bg-black/60 text-white border-gray-600/50 backdrop-blur-sm'
                         }
                       `}>
-                        {u?.name || u?.name === '나' ? u?.name : '익명'}
+                        {u?.name || '익명'}
                       </span>
                     </div>
                   </div>
