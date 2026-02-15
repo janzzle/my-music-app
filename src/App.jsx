@@ -13,9 +13,8 @@ import GlobalStatusLayer from './components/common/GlobalStatusLayer';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, onSnapshot, query, doc, getDoc } from 'firebase/firestore';
-import io from 'socket.io-client';
 
-const socket = io.connect("http://localhost:3001");
+const socket = null;
 
 export default function MusicPlatformApp() {
   const [user, setUser] = useState(null);
