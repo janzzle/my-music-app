@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, setDoc, onSnapshot, collection, query, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
-import { Trash2, CheckCircle, Music, Mic2, BarChart, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit3, Copy } from 'lucide-react';
+import { doc, setDoc, onSnapshot, collection, query, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { Trash2, CheckCircle, Music, Mic2, BarChart, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit3, Copy, RefreshCw } from 'lucide-react';
 
 const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [], audienceList = [] }) => {
   const [adminArtist, setAdminArtist] = useState('');
   const [adminSong, setAdminSong] = useState('');
   const [stageInfo, setStageInfo] = useState({ status: 'ready', titleHidden: false, scoreHidden: true, maintenance: false });
   const [scoreMode, setScoreMode] = useState('realtime');
-  
-  const [activeTab, setActiveTab] = useState('queue'); 
+
+  const [activeTab, setActiveTab] = useState('queue');
   const [adminChallengeId, setAdminChallengeId] = useState('');
   const [adminChallengerName, setAdminChallengerName] = useState('');
   const [isApplied, setIsApplied] = useState(false); // 🚨 적용 상태 추가
@@ -17,13 +17,13 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   // 🚨 통합 데이터 상태
   const [allChallenges, setAllChallenges] = useState([]);
   const [challenges, setChallenges] = useState([]); // 대기열(pending) 전용
-  
+
   // 🚨 정렬 상태 추가
   const [recordSort, setRecordSort] = useState({ key: 'timestamp', order: 'desc' });
   const [statsSort, setStatsSort] = useState({ key: 'createdAt', order: 'desc' });
   const [statsSearchChallenger, setStatsSearchChallenger] = useState('');
   const [statsStatusFilter, setStatsStatusFilter] = useState('all'); // 🚨 통계 전용 상태 필터 추가
-  
+
   const handleRecordSort = (key) => setRecordSort({ key, order: recordSort.key === key && recordSort.order === 'desc' ? 'asc' : 'desc' });
   const handleStatsSort = (key) => setStatsSort({ key, order: statsSort.key === key && statsSort.order === 'desc' ? 'asc' : 'desc' });
 
@@ -33,7 +33,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   const [recordSongSearch, setRecordSongSearch] = useState('');
   const [recordDateSearch, setRecordDateSearch] = useState('');
   const [recordScoreSearch, setRecordScoreSearch] = useState('');
-  
+
   // 🚨 통계(Stats) 상태
   const [statsPeriod, setStatsPeriod] = useState('all');
   const [statsDate, setStatsDate] = useState(new Date());
@@ -51,14 +51,14 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   const handleUserSort = (key) => setUserSort({ key, order: userSort.key === key && userSort.order === 'desc' ? 'asc' : 'desc' });
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const q = query(collection(db, "users"));
-      const snapshot = await getDocs(q);
+    // 🚨 유저 목록 실시간 감지(onSnapshot)로 교체하여 접속 상태 바로바로 반영
+    const q = query(collection(db, "users"));
+    const unsub = onSnapshot(q, (snapshot) => {
       const users = [];
       snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
       setAllUsers(users);
-    };
-    fetchUsers();
+    });
+    return () => unsub();
   }, []);
 
   const grantTicket = async (userId, currentTickets) => {
@@ -71,6 +71,48 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
     await updateDoc(doc(db, "users", userId), { extraTickets: newCount });
     alert(`티켓이 ${amount > 0 ? '지급' : '차감'}되었습니다. (총 ${newCount}장)`);
   };
+
+  // 🚨 [추가] 객석 실시간 새로고침 (Ping-Pong 로직)
+  const handleRefreshAudience = async () => {
+    if (!window.confirm("현재 실제로 접속 중인 관객을 확인하고 오프라인 유저를 정리하시겠습니까?\n(유저 생존 응답 대기를 위해 약 5초가 소요됩니다)")) return;
+
+    const pingTime = Date.now();
+    try {
+      // 1. 전체 유저에게 출석체크(Ping) 신호 보내기
+      await updateDoc(doc(db, "stage", "info"), { pingTime });
+
+      // 2. 5초 대기 (유저들이 Pong 응답을 보낼 시간)
+      alert("관객들의 생존 응답을 기다리는 중입니다... (5초 후 자동 처리됨)");
+
+      setTimeout(async () => {
+        // 3. 응답하지 않은 유저들 오프라인 처리 (Sweep)
+        const usersRef = collection(db, "users");
+        const snap = await getDocs(usersRef);
+
+        const batch = writeBatch(db);
+        let offlineCount = 0;
+
+        snap.forEach(d => {
+          const u = d.data();
+          // 온라인으로 표시되어 있으나, 이번 출석체크(pingTime)에 응답(lastPong)하지 않은 사람
+          if (u.isOnline && u.lastPong !== pingTime) {
+            batch.update(d.ref, { isOnline: false });
+            offlineCount++;
+          }
+        });
+
+        if (offlineCount > 0) {
+          await batch.commit(); // 한 번에 업데이트 (비용 절약)
+        }
+        alert(`✨ 객석 정리 완료!\n${offlineCount}명의 미응답 유저가 오프라인으로 전환되었습니다.`);
+      }, 5000);
+
+    } catch (error) {
+      console.error(error);
+      alert("객석 새로고침 중 오류가 발생했습니다.");
+    }
+  };
+
   // 1. 무대 정보 동기화
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'stage', 'info'), (docSnap) => {
@@ -97,7 +139,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
         return timeA - timeB;
       });
       setAllChallenges(list);
-      setChallenges(list.filter(c => c.status === 'pending')); 
+      setChallenges(list.filter(c => c.status === 'pending'));
     });
     return () => unsubscribe();
   }, []);
@@ -157,10 +199,10 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
     });
 
     setStatsDetail({
-      requested: Object.values(reqCounts).sort((a,b) => b.count - a.count),
-      played: Object.values(playedCounts).sort((a,b) => b.count - a.count),
-      totalReq: Object.values(reqCounts).reduce((a,b)=>a+b.count, 0),
-      totalPlayed: Object.values(playedCounts).reduce((a,b)=>a+b.count, 0)
+      requested: Object.values(reqCounts).sort((a, b) => b.count - a.count),
+      played: Object.values(playedCounts).sort((a, b) => b.count - a.count),
+      totalReq: Object.values(reqCounts).reduce((a, b) => a + b.count, 0),
+      totalPlayed: Object.values(playedCounts).reduce((a, b) => a + b.count, 0)
     });
   }, [allChallenges, statsPeriod, statsDate]);
 
@@ -185,7 +227,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
 
     if (newStatus === 'countdown') {
       updateData.count = 5; updateData.stageId = newStageId; updateData.titleHidden = true; updateData.scoreMode = scoreMode; updateData.scoreHidden = true;
-      if (adminChallengeId) await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'playing' }).catch(()=>{});
+      if (adminChallengeId) await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'playing' }).catch(() => { });
     } else if (newStatus === 'ready') {
       updateData.stageId = ''; updateData.count = null; updateData.titleHidden = false; updateData.scoreHidden = true;
       setAdminChallengeId(''); setAdminChallengerName(''); setAdminArtist(''); setAdminSong('');
@@ -218,22 +260,22 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
       const snap = await getDocs(q);
       const exists = snap.docs.some(d => d.data().artist === adminArtist);
       if (exists) {
-         if(!window.confirm("🚨 이미 기록에 존재하는 곡입니다. 그래도 카운트다운을 진행하시겠습니까?")) return;
+        if (!window.confirm("🚨 이미 기록에 존재하는 곡입니다. 그래도 카운트다운을 진행하시겠습니까?")) return;
       }
-      
+
       await updateStage('countdown');
       let currentCount = 5;
       const timer = setInterval(async () => {
-          currentCount -= 1;
-          if (currentCount <= 0) {
-              clearInterval(timer);
-              await setDoc(doc(db, 'stage', 'info'), { status: 'ready_to_play', count: null, titleHidden: true }, { merge: true });
-              setTimeout(async () => {
-                  await setDoc(doc(db, 'stage', 'info'), { status: 'playing', titleHidden: true }, { merge: true });
-              }, 1500);
-          } else {
-              await setDoc(doc(db, 'stage', 'info'), { count: currentCount }, { merge: true });
-          }
+        currentCount -= 1;
+        if (currentCount <= 0) {
+          clearInterval(timer);
+          await setDoc(doc(db, 'stage', 'info'), { status: 'ready_to_play', count: null, titleHidden: true }, { merge: true });
+          setTimeout(async () => {
+            await setDoc(doc(db, 'stage', 'info'), { status: 'playing', titleHidden: true }, { merge: true });
+          }, 1500);
+        } else {
+          await setDoc(doc(db, 'stage', 'info'), { count: currentCount }, { merge: true });
+        }
       }, 1000);
     } catch (err) {
       console.error(err);
@@ -274,7 +316,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
     if (newSong === null) return;
     const newName = prompt("도전자 닉네임을 수정하세요:", item.applicantName);
     if (newName === null) return;
-    
+
     await updateDoc(doc(db, "challenges", item.id), {
       artist: newArtist,
       song: newSong,
@@ -294,7 +336,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
     else if (newStatus === 'completed') statusName = '✅ 완료됨';
 
     if (!window.confirm(`정말 이 신청곡을 [${statusName}] 상태로 변경하시겠습니까?`)) return;
-    
+
     try {
       await updateDoc(doc(db, "challenges", id), { status: newStatus });
     } catch (error) {
@@ -312,7 +354,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
 
   const handleDeleteChallenge = async (id) => {
     if (!window.confirm("이 신청곡을 대기열에서 완전히 [영구 삭제]하시겠습니까?\n(통계에서도 완전히 제외됩니다)")) return;
-    await deleteDoc(doc(db, "challenges", id)); 
+    await deleteDoc(doc(db, "challenges", id));
   };
 
   const handleEditRecordTitle = async (group) => {
@@ -320,11 +362,11 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
     if (newArtist === null) return;
     const newSong = window.prompt("새로운 곡 제목을 입력하세요:", group.song);
     if (newSong === null) return;
-    
-    await updateDoc(doc(db, "stage_results", group.id), { 
-      artist: newArtist, 
-      song: newSong, 
-      songTitle: `${newArtist} - ${newSong}` 
+
+    await updateDoc(doc(db, "stage_results", group.id), {
+      artist: newArtist,
+      song: newSong,
+      songTitle: `${newArtist} - ${newSong}`
     });
     alert("수정되었습니다.");
   };
@@ -372,7 +414,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
 
   return (
     <div className="w-full min-h-screen bg-gray-900 text-white p-6 pt-16 md:pt-24 flex flex-col items-center">
-      
+
       {/* 🚨 탭 네비게이션 */}
       <div className="w-full max-w-7xl flex gap-4 md:gap-6 border-b border-gray-700 mb-8 overflow-x-auto shrink-0 scrollbar-hide">
         <button onClick={() => setActiveTab('queue')} className={`font-black text-sm md:text-base pb-3 border-b-4 transition-colors whitespace-nowrap ${activeTab === 'queue' ? 'border-indigo-400 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
@@ -422,14 +464,14 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     </td>
                     <td className="p-3 text-center text-gray-400">{getPlayCount(c.artist, c.song)}회</td>
                     <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleEditQueue(c); }} className="text-blue-400 hover:text-white p-1"><Edit3 size={16}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEditQueue(c); }} className="text-blue-400 hover:text-white p-1"><Edit3 size={16} /></button>
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(c.id); }} className="text-red-400 hover:text-white p-1"><Trash2 size={16}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(c.id); }} className="text-red-400 hover:text-white p-1"><Trash2 size={16} /></button>
                     </td>
                     <td className="p-3 text-[10px] text-gray-500 font-mono flex items-center gap-1">
                       <span className="truncate max-w-[80px]">{c.id}</span>
-                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(c.id); alert('복사되었습니다.'); }} className="text-gray-400 hover:text-white bg-gray-700 p-1 rounded"><Copy size={12}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(c.id); alert('복사되었습니다.'); }} className="text-gray-400 hover:text-white bg-gray-700 p-1 rounded"><Copy size={12} /></button>
                     </td>
                   </tr>
                 ))}
@@ -485,10 +527,10 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     <td className="p-3 text-center text-yellow-400 font-bold">{group.points}점</td>
                     <td className="p-3 text-center text-gray-400">{getPlayCount(group.artist, group.song)}회</td>
                     <td className="p-3 text-center">
-                      <button onClick={() => handleEditRecordTitle(group)} className="p-1.5 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600 hover:text-white"><Edit3 size={16}/></button>
+                      <button onClick={() => handleEditRecordTitle(group)} className="p-1.5 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600 hover:text-white"><Edit3 size={16} /></button>
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={() => handleDeleteRecord(group)} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16}/></button>
+                      <button onClick={() => handleDeleteRecord(group)} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16} /></button>
                     </td>
                     <td className="p-3 text-[10px] text-gray-500 font-mono truncate max-w-[80px]">{group.id}</td>
                   </tr>
@@ -502,13 +544,13 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
         <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-pink-500/30 p-6 shadow-2xl overflow-hidden">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <h2 className="text-xl font-bold text-pink-400 flex items-center gap-2"><BarChart size={20} /> 도전 신청곡 통계 관리</h2>
-            
+
             <div className="flex flex-wrap items-center gap-2">
               <input type="text" value={statsSearchArtist} onChange={(e) => setStatsSearchArtist(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
               <input type="text" value={statsSearchSong} onChange={(e) => setStatsSearchSong(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
               <input type="text" value={statsSearchChallenger} onChange={(e) => setStatsSearchChallenger(e.target.value)} placeholder="🔍 신청자 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
               <input type="date" value={statsDateSearch} onChange={(e) => setStatsDateSearch(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-36 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-inner" />
-              
+
               <select value={statsStatusFilter} onChange={(e) => setStatsStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-inner">
                 <option value="all">전체 상태</option>
                 <option value="pending">⏳ 단순 신청</option>
@@ -539,7 +581,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                   const matchC = c.applicantName ? c.applicantName.toLowerCase().includes(statsSearchChallenger.toLowerCase()) : true;
                   const matchStatus = statsStatusFilter === 'all' ? true : c.status === statsStatusFilter;
                   const matchD = statsDateSearch ? new Date(c.createdAt?.toDate ? c.createdAt.toDate() : c.createdAt).toISOString().startsWith(statsDateSearch) : true;
-                  
+
                   return matchA && matchS && matchC && matchStatus && matchD;
                 }).sort((a, b) => {
                   let valA = a[statsSort.key] || ''; let valB = b[statsSort.key] || '';
@@ -555,14 +597,14 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     <td className="p-3 text-center text-indigo-300">{item.applicantName || '익명'}</td>
                     <td className="p-3 text-center text-pink-400 font-bold">{allChallenges.filter(c => c.artist === item.artist && c.song === item.song).length}건</td>
                     <td className="p-3 text-center font-bold">
-                       <select value={item.status || 'pending'} onChange={(e) => handleUpdateChallengeStatus(item.id, e.target.value)} className={`bg-transparent appearance-none border-none outline-none cursor-pointer text-sm font-bold text-center transition-opacity hover:opacity-70 ${item.status === 'completed' ? 'text-green-400' : item.status === 'playing' ? 'text-blue-400' : 'text-gray-400'}`}>
-                         <option value="pending" className="bg-gray-800 text-gray-400">⏳ 대기중 (단순신청)</option>
-                         <option value="playing" className="bg-gray-800 text-blue-400">▶️ 카운트/진행중</option>
-                         <option value="completed" className="bg-gray-800 text-green-400">✅ 완료됨</option>
-                       </select>
+                      <select value={item.status || 'pending'} onChange={(e) => handleUpdateChallengeStatus(item.id, e.target.value)} className={`bg-transparent appearance-none border-none outline-none cursor-pointer text-sm font-bold text-center transition-opacity hover:opacity-70 ${item.status === 'completed' ? 'text-green-400' : item.status === 'playing' ? 'text-blue-400' : 'text-gray-400'}`}>
+                        <option value="pending" className="bg-gray-800 text-gray-400">⏳ 대기중 (단순신청)</option>
+                        <option value="playing" className="bg-gray-800 text-blue-400">▶️ 카운트/진행중</option>
+                        <option value="completed" className="bg-gray-800 text-green-400">✅ 완료됨</option>
+                      </select>
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(item.id); }} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(item.id); }} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16} /></button>
                     </td>
                   </tr>
                 ))}
@@ -576,8 +618,17 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
         <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-green-500/30 p-6 shadow-2xl overflow-hidden">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <h2 className="text-xl font-bold text-green-400 flex items-center gap-2">👥 참가자 목록 및 티켓 관리</h2>
+
             <div className="flex flex-col md:flex-row gap-2">
-              {/* 🚨 [추가] 접속 중인 사람만 보기 토글 버튼 */}
+              {/* 🚨 객석 새로고침(Ping-Pong) 버튼 */}
+              <button
+                onClick={handleRefreshAudience}
+                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs font-bold rounded-lg shadow-lg transition-colors border border-indigo-400 mr-2"
+              >
+                <RefreshCw size={14} /> 객석 새로고침
+              </button>
+
+              {/* 🚨 접속 중인 사람만 보기 토글 버튼 */}
               <div className="flex gap-1 bg-gray-900 p-1 rounded-lg border border-gray-700">
                 <button onClick={() => setUserFilterOnline(true)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${userFilterOnline ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}>🟢 접속 중만 보기</button>
                 <button onClick={() => setUserFilterOnline(false)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${!userFilterOnline ? 'bg-gray-700 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}>전체보기</button>
@@ -601,33 +652,33 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
               </thead>
               <tbody>
                 {allUsers
-                  .filter(u => (u.name||'').includes(userSearchTerm) || (u.email||'').includes(userSearchTerm))
+                  .filter(u => (u.name || '').includes(userSearchTerm) || (u.email || '').includes(userSearchTerm))
                   .filter(u => userFilterOnline ? u.isOnline === true : true)
                   .sort((a, b) => {
                     let valA = a[userSort.key]; let valB = b[userSort.key];
                     // 접속 상태 정렬의 경우 true(1), false(0)로 환산하여 정렬
                     if (userSort.key === 'isOnline') { valA = a.isOnline ? 1 : 0; valB = b.isOnline ? 1 : 0; }
                     else { valA = valA || ''; valB = valB || ''; }
-                    
+
                     if (valA < valB) return userSort.order === 'asc' ? -1 : 1;
                     if (valA > valB) return userSort.order === 'asc' ? 1 : -1;
                     return 0;
                   })
                   .map(u => {
-                  return (
-                  <tr key={u.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                    <td className="p-3 font-bold text-white">{u.name || '미설정'}</td>
-                    <td className="p-3 text-gray-400">{u.email || '없음'}</td>
-                    <td className="p-3 text-center">{u.isOnline ? <span className="text-green-400 font-bold text-xs">🟢 접속 중</span> : <span className="text-gray-500 text-xs">⚪ 오프라인</span>}</td>
-                    <td className="p-3 text-center">{u.isAdmin ? <span className="text-red-400 font-bold">관리자</span> : '일반'}</td>
-                    <td className="p-3 text-center font-bold text-yellow-400">{u.extraTickets || 0}장</td>
-                    <td className="p-3 text-center">
-                      <button onClick={() => grantTicket(u.id, u.extraTickets)} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-bold shadow-lg">+1 지급</button>
-                    </td>
-                    <td className="p-3 text-[10px] text-gray-500 font-mono">{u.id}</td>
-                  </tr>
-                );
-                })}
+                    return (
+                      <tr key={u.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
+                        <td className="p-3 font-bold text-white">{u.name || '미설정'}</td>
+                        <td className="p-3 text-gray-400">{u.email || '없음'}</td>
+                        <td className="p-3 text-center">{u.isOnline ? <span className="text-green-400 font-bold text-xs">🟢 접속 중</span> : <span className="text-gray-500 text-xs">⚪ 오프라인</span>}</td>
+                        <td className="p-3 text-center">{u.isAdmin ? <span className="text-red-400 font-bold">관리자</span> : '일반'}</td>
+                        <td className="p-3 text-center font-bold text-yellow-400">{u.extraTickets || 0}장</td>
+                        <td className="p-3 text-center">
+                          <button onClick={() => grantTicket(u.id, u.extraTickets)} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-bold shadow-lg">+1 지급</button>
+                        </td>
+                        <td className="p-3 text-[10px] text-gray-500 font-mono">{u.id}</td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>

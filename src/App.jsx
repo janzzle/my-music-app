@@ -138,15 +138,30 @@ export default function MusicPlatformApp() {
     };
   }, [user]);
 
-  // 실시간 무대 정보 동기화
+  // 실시간 무대 정보 동기화 및 🚨 관리자 객석 새로고침(Ping-Pong) 응답 로직
   useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, "stage", "info"), (doc) => {
-      if (doc.exists()) {
-        setStageInfo(doc.data());
+    const unsubscribe = onSnapshot(doc(db, "stage", "info"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setStageInfo(data);
+
+        // 🚨 관리자가 '객석 새로고침(Ping)'을 눌렀을 때의 응답(Pong) 로직
+        if (user && data.pingTime) {
+          const localLastPing = sessionStorage.getItem('lastPing');
+          // 관리자가 보낸 핑 시간이 내가 마지막으로 응답한 시간과 다르다면 (새로운 출석체크라면)
+          if (localLastPing !== data.pingTime.toString()) {
+            sessionStorage.setItem('lastPing', data.pingTime.toString()); // 응답 기억
+            // 서버에 "저 살아있어요!" 라고 응답
+            updateDoc(doc(db, "users", user.uid), { 
+              isOnline: true, 
+              lastPong: data.pingTime 
+            }).catch(e => console.error("Pong 에러:", e));
+          }
+        }
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const q = query(collection(db, "votes"));
