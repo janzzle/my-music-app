@@ -20,7 +20,7 @@ const GlobalStatusLayer = ({ socket, currentPage }) => {
     window.alert = (msg) => {
       setToast(msg);
       // 3초 뒤에 예쁜 알림이 스르륵 사라지게 설정 (시간 조절 가능)
-      setTimeout(() => setToast(''), 1000);
+      setTimeout(() => setToast(''), 3000);
     };
 
     if (socket) {
