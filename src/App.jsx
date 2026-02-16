@@ -12,8 +12,7 @@ import BroadcastPage from './pages/BroadcastPage';
 import GlobalStatusLayer from './components/common/GlobalStatusLayer';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, onSnapshot, query, doc, getDoc } from 'firebase/firestore';
-
+import { collection, onSnapshot, query, doc, getDoc, updateDoc } from 'firebase/firestore';
 const socket = null;
 
 export default function MusicPlatformApp() {
