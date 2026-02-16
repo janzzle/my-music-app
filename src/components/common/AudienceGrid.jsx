@@ -59,18 +59,22 @@ const AudienceGrid = ({ audienceList = [], stageInfo = {}, isBlindActive, dailyT
                       <div className="absolute inset-0 bg-fuchsia-500/20 blur-xl rounded-full scale-150 animate-pulse z-0"></div>
                     )}
 
-                    {/* 형광등 스케치북 */}
-                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 w-20">
+                    {/* 형광등 스케치북 (🚨 수정: 전체 위치 하향 조정 및 크기 축소) */}
+                    <div className="absolute -top-11 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 w-20">
+                      
+                      {/* 🚨 수정: 형광등 크기를 약간 줄임 (w-12 h-8 -> w-10 h-7) */}
                       <div className={`
-                        w-12 h-8 bg-gray-800 rounded-md border-2 border-gray-600 shadow-xl flex gap-0.5 p-0.5 mb-1 transform transition-all duration-500
+                        w-10 h-7 bg-gray-800 rounded-md border-2 border-gray-600 shadow-xl flex gap-0.5 p-0.5 mb-1 transform transition-all duration-500
                         ${showLight ? 'scale-110 opacity-100' : 'scale-90 opacity-0'}
                       `}>
                         <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isUnknown ? 'bg-cyan-400 shadow-[0_0_10px_cyan]' : 'bg-gray-700 opacity-20'}`}></div>
                         <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isLike ? 'bg-pink-500 shadow-[0_0_10px_pink]' : 'bg-gray-700 opacity-20'}`}></div>
                       </div>
-                      <div className={`flex justify-between w-8 relative z-10 transition-all duration-500 ${showLight ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                        <div className="w-1 h-5 bg-gray-300 border border-gray-400 rounded-full transform -rotate-[20deg] origin-bottom"></div>
-                        <div className="w-1 h-5 bg-gray-300 border border-gray-400 rounded-full transform rotate-[20deg] origin-bottom"></div>
+
+                      {/* 🚨 수정: 팔 길이를 짧게 줄임 (h-5 -> h-3.5) */}
+                      <div className={`flex justify-between w-7 relative z-10 transition-all duration-500 ${showLight ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+                        <div className="w-1 h-3.5 bg-gray-300 border border-gray-400 rounded-full transform -rotate-[20deg] origin-bottom"></div>
+                        <div className="w-1 h-3.5 bg-gray-300 border border-gray-400 rounded-full transform rotate-[20deg] origin-bottom"></div>
                       </div>
                     </div>
                     
