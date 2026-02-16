@@ -54,22 +54,22 @@ const MyPage = () => {
         userSnap.forEach(d => { userDict[d.id] = d.data(); });
 
         for (const chunk of chunks) {
-          // A. 무대 결과 매칭 (신청곡 고유번호 기준)
-          const resQuery = query(collection(db, "stage_results"), where("stageId", "in", chunk));
-          const resSnap = await getDocs(resQuery);
-          resSnap.forEach(d => {
-            const data = d.data();
-            totalPts += (data.points || 0);
-            if (data.points > highestPts) { highestPts = data.points; best = data.songTitle; }
-            
-            sStats[data.stageId] = { 
-              points: data.points || 0, voteCount: data.voteCount || 0, 
+          // 🚨 [수정 1] DB에 무대 결과(stage_results)가 없더라도 UI가 나오도록 기본 골격 강제 생성
+          chunk.forEach(id => {
+            sStats[id] = { 
+              points: 0, voteCount: 0, 
               unknown: 0, like: 0, ages: {}, genders: { male: 0, female: 0 },
-              voteTypes: { both: 0, unknownOnly: 0, likeOnly: 0 } // 🚨 투표 성향 상세 추가
+              voteTypes: { both: 0, unknownOnly: 0, likeOnly: 0 } 
             };
           });
 
-          // B. 투표 기록 매칭 (신청곡 고유번호 기준)
+          // A. 무대 결과에서 '곡 제목'만 안전하게 추출 (점수는 투표에서 직접 계산)
+          const resQuery = query(collection(db, "stage_results"), where("stageId", "in", chunk));
+          const resSnap = await getDocs(resQuery);
+          const titleMap = {};
+          resSnap.forEach(d => { titleMap[d.data().stageId] = d.data().songTitle; });
+
+          // B. 투표 기록 매칭 및 상세 점수 직접 집계 (오류 원천 차단)
           const voteQuery = query(collection(db, "votes"), where("stageId", "in", chunk));
           const voteSnap = await getDocs(voteQuery);
           
@@ -77,36 +77,46 @@ const MyPage = () => {
             const data = v.data();
             const sid = data.stageId;
 
-            if (data.choices?.isUnknown) unknownCnt++;
-            if (data.choices?.isLike) likeCnt++;
+            if (!sid || !sStats[sid]) return; 
+
+            const isU = data.choices?.isUnknown;
+            const isL = data.choices?.isLike;
+
+            if (isU) { unknownCnt++; sStats[sid].unknown++; }
+            if (isL) { likeCnt++; sStats[sid].like++; }
+
+            // 🚨 [수정 2] 점수 직접 계산 및 투표 성향 분리 (결정하신 1점, 1점, 둘 다 4점 로직 적용)
+            let pts = 0;
+            if (isU && isL) { pts = 4; sStats[sid].voteTypes.both++; }
+            else if (isU && !isL) { pts = 1; sStats[sid].voteTypes.unknownOnly++; }
+            else if (!isU && isL) { pts = 1; sStats[sid].voteTypes.likeOnly++; }
+            
+            sStats[sid].points += pts;
+            sStats[sid].voteCount++;
+
+            // 최고 점수 갱신
+            if (sStats[sid].points > highestPts) {
+              highestPts = sStats[sid].points;
+              best = titleMap[sid] || "최근 곡";
+            }
 
             const voterInfo = userDict[data.uid];
             if (voterInfo) {
-              // 전체 대시보드용 누적 합산
+              // 전체 대시보드용 누적
               if (voterInfo.age) ageCount[voterInfo.age] = (ageCount[voterInfo.age] || 0) + 1;
               if (voterInfo.gender === 'male') genderCount.male++;
               if (voterInfo.gender === 'female') genderCount.female++;
 
-              // 개별 무대(곡별) 누적 합산
-              if (sStats[sid]) {
-                const isU = data.choices?.isUnknown;
-                const isL = data.choices?.isLike;
-                
-                if (isU) sStats[sid].unknown++;
-                if (isL) sStats[sid].like++;
-                
-                // 🚨 투표 성향 세분화 기록
-                if (isU && isL) sStats[sid].voteTypes.both++;
-                else if (isU && !isL) sStats[sid].voteTypes.unknownOnly++;
-                else if (!isU && isL) sStats[sid].voteTypes.likeOnly++;
-
-                if (voterInfo.age) sStats[sid].ages[voterInfo.age] = (sStats[sid].ages[voterInfo.age] || 0) + 1;
-                if (voterInfo.gender === 'male') sStats[sid].genders.male++;
-                if (voterInfo.gender === 'female') sStats[sid].genders.female++;
-              }
+              // 개별 곡별 통계 누적
+              if (voterInfo.age) sStats[sid].ages[voterInfo.age] = (sStats[sid].ages[voterInfo.age] || 0) + 1;
+              if (voterInfo.gender === 'male') sStats[sid].genders.male++;
+              if (voterInfo.gender === 'female') sStats[sid].genders.female++;
             }
           });
         }
+        
+        // 전체 점수는 오류 방지를 위해 모든 무대 점수를 합산하여 최종 보정
+        totalPts = Object.values(sStats).reduce((acc, curr) => acc + curr.points, 0);
 
         setStats({ totalScore: totalPts, bestSong: best, totalPlayed: completedIds.length, totalUnknown: unknownCnt, totalLike: likeCnt });
         setDemographics({ age: ageCount, gender: genderCount });
