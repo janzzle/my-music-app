@@ -8,7 +8,7 @@ import RankingBoard from '../components/common/RankingBoard';
 import StageStatusPanel from '../components/common/StageStatusPanel';
 
 // 👇 [추가] Firebase 연동을 위한 함수 가져오기
-import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin, leaderboard = [], liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [] }) => {
@@ -184,7 +184,33 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
       console.error(error);
     }
   };
-
+  // 🚨 [추가] 객석 업데이트 (Ping-Pong) 로직 (AdminPage와 동일)
+  const handleRefreshAudience = async () => {
+    // 🚨 윈도우 confirm 대신, 관리자가 실수로 누르는 걸 방지하기 위해 기본 alert 활용 (의도적)
+    const pingTime = Date.now();
+    try {
+      await updateDoc(doc(db, "stage", "info"), { pingTime });
+      alert("관객 생존 응답 대기 중... (5초 후 자동 처리)");
+      setTimeout(async () => {
+        const usersRef = collection(db, "users");
+        const snap = await getDocs(usersRef);
+        const batch = writeBatch(db);
+        let offlineCount = 0;
+        snap.forEach(d => {
+          const u = d.data();
+          if (u.isOnline && u.lastPong !== pingTime) {
+            batch.update(d.ref, { isOnline: false });
+            offlineCount++;
+          }
+        });
+        if (offlineCount > 0) await batch.commit();
+        alert(`✨ 객석 정리 완료! ${offlineCount}명의 미응답 유저가 오프라인 처리되었습니다.`);
+      }, 5000);
+    } catch (error) {
+      console.error(error);
+      alert("객석 업데이트 중 오류가 발생했습니다.");
+    }
+  };
   return (
     <div className="relative w-full min-h-screen md:h-screen bg-gray-900 flex flex-col items-center overflow-x-hidden overflow-y-auto md:overflow-hidden pt-16 md:pt-20 pb-24 md:pb-0 gap-6 md:gap-0">
 
@@ -354,9 +380,14 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
                   <button onClick={() => toggleMaintenance(false)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${!stageInfo?.maintenance ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔓 정비 OFF</button>
                 </div>
                 
-                <button onClick={handleUpdateRanking} className="bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-white font-bold text-sm col-span-2 mt-2 shadow-lg">
-                    🏆 현재 순위 업데이트
-                </button>
+                <div className="col-span-2 flex gap-2 mt-2">
+                  <button onClick={handleUpdateRanking} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-white font-bold text-[11px] shadow-lg">
+                      🏆 순위 업데이트
+                  </button>
+                  <button onClick={handleRefreshAudience} className="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg text-white font-bold text-[11px] shadow-lg">
+                      🔄 객석 업데이트
+                  </button>
+                </div>
 
                 {/* 🚨 DB의 이전 데이터까지 공백('')으로 완전 덮어씌워서 좀비 데이터 방지 */}
                 <button onClick={async () => { await setDoc(doc(db, 'stage', 'info'), { status: 'ready', songTitle: '', artist: '', song: '', challengerName: '', challengerUid: '', stageId: '', titleHidden: false, scoreHidden: true, count: null, updatedAt: new Date() }, { merge: true }); setAdminArtist(''); setAdminSong(''); setAdminChallengerName(''); setAdminChallengeId(''); setIsApplied(false); }} className="bg-red-800 py-3 rounded-lg text-white font-bold text-sm hover:bg-red-700 col-span-2 mt-2 shadow-lg">

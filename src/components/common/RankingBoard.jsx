@@ -17,9 +17,12 @@ const RankingBoard = ({ leaderboard = [] }) => {
                 <span className={`font-bold italic text-lg md:text-xl ${idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-gray-300' : 'text-orange-400'}`}>
                   {idx + 1}
                 </span>
-                <div className="flex flex-col">
+                <div className="flex flex-col min-w-0">
                   <span className="text-white font-bold text-sm md:text-base leading-tight truncate max-w-[140px] md:max-w-[200px]">
                     {item.songTitle}
+                  </span>
+                  <span className="text-gray-400 text-[10px] md:text-xs truncate mt-0.5">
+                    도전자: {item.challengerName || '익명'}
                   </span>
                 </div>
               </div>

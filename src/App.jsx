@@ -182,7 +182,7 @@ export default function MusicPlatformApp() {
 
         // 2. 점수 합산 준비
         if (!scores[key]) {
-          scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', points: 0 };
+          scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', challengerName: data.challengerName || '익명 도전자', points: 0 };
         }
 
         // 3. 점수 계산 공식 (둘 다=4점, 하나만=1점) - 🚨 에러 방어 적용
@@ -228,7 +228,7 @@ export default function MusicPlatformApp() {
       // 블라인드 모드 & 점수 비공개 상태인 '현재 무대'는 랭킹 계산에서 임시 제외!
       if (key === stageInfo.stageId && stageInfo.scoreMode === 'blind' && stageInfo.scoreHidden) return; 
 
-      if (!scores[key]) scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', points: 0 };
+      if (!scores[key]) scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', challengerName: data.challengerName || '익명 도전자', points: 0 };
       
       // 🚨 에러 방어 적용
       let pts = 0;
