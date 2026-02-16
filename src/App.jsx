@@ -287,7 +287,7 @@ export default function MusicPlatformApp() {
 
   return (
     <div className="font-sans text-gray-900 bg-gray-50 min-h-screen relative pb-16">
-      <GlobalStatusLayer socket={socket} />
+      <GlobalStatusLayer socket={socket} currentPage={currentPage} />
       <Navigation
         isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} 
         user={user} handleLogout={handleLogout} 
