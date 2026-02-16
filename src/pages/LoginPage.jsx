@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
 const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
   const [name, setName] = useState('');
@@ -27,10 +27,12 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
   };
 
   const handleAuthAction = async () => {
-    if (!name || !pw) {
-      alert("닉네임과 암호를 입력해주세요."); return;
+    // 🚨 [수정] 다른 계정으로 로그인 시도 시 안내 후 교체
+    const boundName = localStorage.getItem('boundAccountName');
+    if (boundName && boundName !== name) {
+      alert(`중복 로그인이 감지되었습니다.\n기존 계정(${boundName})을 로그아웃하고 새로운 계정으로 접속합니다.`);
     }
-
+    
     if (isSignupMode && (!signupData.age || !signupData.gender)) {
       alert("나이와 성별을 선택해주세요."); return;
     }

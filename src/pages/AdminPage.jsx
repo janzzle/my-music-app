@@ -297,7 +297,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
       alert("상태 변경 중 오류가 발생했습니다.");
     }
   };
-  
+
   const [statsDateSearch, setStatsDateSearch] = useState(''); // 🚨 통계 달력 검색 통일
 
   const completeChallenge = async (id) => {
@@ -588,12 +588,11 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
               </thead>
               <tbody>
                 {allUsers.filter(u => (u.name||'').includes(userSearchTerm) || (u.email||'').includes(userSearchTerm)).map(u => {
-                  const isOnline = audienceList.some(onlineUser => onlineUser.id === u.id);
                   return (
                   <tr key={u.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
                     <td className="p-3 font-bold text-white">{u.name || '미설정'}</td>
                     <td className="p-3 text-gray-400">{u.email || '없음'}</td>
-                    <td className="p-3 text-center">{isOnline ? <span className="text-green-400 font-bold text-xs">🟢 접속 중</span> : <span className="text-gray-500 text-xs">⚪ 오프라인</span>}</td>
+                    <td className="p-3 text-center">{u.isOnline ? <span className="text-green-400 font-bold text-xs">🟢 접속 중</span> : <span className="text-gray-500 text-xs">⚪ 오프라인</span>}</td>
                     <td className="p-3 text-center">{u.isAdmin ? <span className="text-red-400 font-bold">관리자</span> : '일반'}</td>
                     <td className="p-3 text-center font-bold text-yellow-400">{u.extraTickets || 0}장</td>
                     <td className="p-3 text-center">

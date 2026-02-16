@@ -113,21 +113,23 @@ export default function MusicPlatformApp() {
     return () => unsubscribe();
   }, []);
 
-  // 🚨 [추가] 중복 로그인 방지 감지 (다른 기기 접속 시 로그아웃)
+  // 🚨 [추가] 현재 실시간으로 접속 중인지(Online) 서버에 상태 기록
   useEffect(() => {
     if (!user) return;
-    const unsub = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const localSession = localStorage.getItem('sessionId');
-        if (data.currentSessionId && localSession && data.currentSessionId !== localSession) {
-          alert("🚨 다른 기기에서 접속이 감지되어 강제 로그아웃 되었습니다.");
-          signOut(auth); 
-          window.location.reload();
-        }
-      }
-    });
-    return () => unsub();
+    const userRef = doc(db, "users", user.uid);
+    // 접속 즉시 온라인 처리
+    updateDoc(userRef, { isOnline: true }).catch(e => console.log(e));
+
+    const handleUnload = () => {
+      // 브라우저를 끄거나 나갈 때 오프라인 처리
+      updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
+    };
+    
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
+      window.removeEventListener("beforeunload", handleUnload);
+    };
   }, [user]);
 
   // 실시간 무대 정보 동기화
@@ -230,9 +232,10 @@ export default function MusicPlatformApp() {
       choices: myVote ? myVote.choices : { isUnknown: false, isLike: false }
     }];
 
-    // 2. 다른 모든 가입자들을 뒤이어 착석 (투표를 안 했어도 자리는 보이도록)
+    // 2. 다른 가입자들을 뒤이어 착석 (🚨 현재 실시간 접속 중인 사람만 보이도록 수정!)
     allUsers.forEach(u => {
       if (user && u.uid === user.uid) return; // '나'는 1번에 앉았으니 패스
+      if (!u.isOnline) return; // 오프라인 유저는 객석에서 제외!
       
       const voteData = currentVotes.find(v => v.uid === u.uid);
       newAudience.push({

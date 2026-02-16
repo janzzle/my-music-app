@@ -18,6 +18,14 @@ const VoteModal = ({ onClose, stageInfo }) => {
     else if (!isUnknown && isLike) points = 1; // "좋아요"만 선택
     // (참고: 둘 다 선택 안 하면 points는 0)
 
+    // 🚨 [추가] 기기(브라우저) 단위 다중 계정 얌체 투표 방지
+    const localVoted = JSON.parse(localStorage.getItem('votedStages') || '{}');
+    if (localVoted[stageInfo.stageId]) {
+      alert("🚨 이 기기에서는 이미 해당 무대에 투표한 기록이 있습니다.\n(다중 계정을 이용한 중복 투표는 금지됩니다.)");
+      onClose();
+      return;
+    }
+
     try {
       // ✅ [수정 1] 중복 투표 방지 로직 강화
       // "내가(uid)", "이 무대(stageId)에" 투표한 적이 있는지 확인해야 함.
@@ -54,6 +62,10 @@ const VoteModal = ({ onClose, stageInfo }) => {
         choices: { isUnknown, isLike }, // 선택 정보 저장
         timestamp: new Date()
       });
+
+      // 🚨 기기 로컬에 투표 완료 기록 남기기
+      localVoted[stageInfo.stageId] = true;
+      localStorage.setItem('votedStages', JSON.stringify(localVoted));
 
       alert(`${points}점 투표 완료!`);
       onClose();

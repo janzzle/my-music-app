@@ -81,9 +81,11 @@ const AudienceGrid = ({ audienceList = [], stageInfo = {}, isBlindActive, dailyT
                     
                     {/* 🚨 이름표 (여기에만 은은한 테두리 빛 적용) */}
                     <div className="relative flex items-center z-20 mt-1">
-                      {isMonthlyTop && <span className={`absolute -left-6 -top-2 text-[8px] font-black px-1.5 py-0.5 rounded shadow-lg transform -rotate-12 z-30 border ${monthlyBadgeStyle}`}>{currentMonthNum}월</span>}
+                      {/* [👇 조절 가이드] text-[5px]로 초소형화하고 위치를 아이콘 좌측 상단으로 뺐습니다. -left-3은 왼쪽 위치, -top-1은 위쪽 위치, text-[6px]는 글자 크기, px-1은 가로 여백입니다.*/}
+                      {isMonthlyTop && <span className={`absolute -left-4 -top-6 text-[5px] font-black px-1 py-[1px] rounded shadow-sm transform -rotate-[20deg] z-30 border ${monthlyBadgeStyle}`}>{currentMonthNum}월 Top</span>}
                       
-                      <span className={`text-[9px] px-2 py-1 rounded-full font-bold tracking-tighter truncate max-w-[60px] border transition-all
+                      {/* [👇 조절 가이드] max-w-[50px] 숫자를 늘리면 긴 이름이 덜 잘리지만 겹칠 수 있습니다. */}
+                      <span className={`text-[9px] px-2 py-1 rounded-full font-bold tracking-tighter truncate max-w-[50px] border transition-all
                         ${isChallenger ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_10px_#ec4899]' : 
                           isDailyTop1 ? 'bg-gray-900 text-yellow-400 border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.5)]' :
                           isDailyTop2 ? 'bg-gray-900 text-gray-200 border-gray-400/60 shadow-[0_0_8px_rgba(209,213,219,0.5)]' :
