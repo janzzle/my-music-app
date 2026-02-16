@@ -101,19 +101,34 @@ export default function MusicPlatformApp() {
             const data = userSnap.data();
             userName = data.name;
             if (data.isAdmin === true) adminStatus = true;
+          } else {
+            // 🚨 [핵심] 옛날에 가입해서 DB에 누락된 계정(노트북)을 자동 복구하여 객석에 보이게 함
+            await setDoc(userDocRef, { uid: currentUser.uid, name: userName || '익명', email: currentUser.email, createdAt: new Date() });
           }
-        } catch (error) {
-          console.error("유저 정보 로딩 실패:", error);
-        }
+        } catch (error) { console.error("유저 정보 로딩 실패:", error); }
         setUser({ uid: currentUser.uid, name: userName || '익명' });
         setIsAdmin(adminStatus);
-      } else {
-        setUser(null);
-        setIsAdmin(false);
-      }
+      } else { setUser(null); setIsAdmin(false); }
     });
     return () => unsubscribe();
   }, []);
+
+  // 🚨 [추가] 중복 로그인 방지 감지 (다른 기기 접속 시 로그아웃)
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const localSession = localStorage.getItem('sessionId');
+        if (data.currentSessionId && localSession && data.currentSessionId !== localSession) {
+          alert("🚨 다른 기기에서 접속이 감지되어 강제 로그아웃 되었습니다.");
+          signOut(auth); 
+          window.location.reload();
+        }
+      }
+    });
+    return () => unsub();
+  }, [user]);
 
   // 실시간 무대 정보 동기화
   useEffect(() => {

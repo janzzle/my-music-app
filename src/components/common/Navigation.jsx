@@ -44,8 +44,12 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen, user, handleLogout, setIsSignup
       </div>
 
       {isMenuOpen && (
-        <div className="absolute top-12 right-4 md:right-6 z-50 bg-white rounded-xl shadow-2xl border border-gray-100 w-56 overflow-hidden animate-fade-in-down origin-top-right">
-          <div className="bg-gray-50 p-3 border-b text-xs font-bold text-gray-600">
+        <>
+          {/* 👇 외부 영역 클릭 시 메뉴 닫기용 투명 오버레이 */}
+          <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)}></div>
+          
+          <div className="absolute top-12 right-4 md:right-6 z-50 bg-white rounded-xl shadow-2xl border border-gray-100 w-56 overflow-hidden animate-fade-in-down origin-top-right">
+            <div className="bg-gray-50 p-3 border-b text-xs font-bold text-gray-600">
             {user ? `👋 환영합니다! ${user.name}님` : '로그인이 필요합니다'}
           </div>
           
@@ -98,6 +102,7 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen, user, handleLogout, setIsSignup
             )}
           </nav>
         </div>
+        </>
       )}
     </>
   );

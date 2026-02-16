@@ -58,25 +58,35 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
         const user = userCredential.user;
         await updateProfile(user, { displayName: name });
 
-        // 3. DB 저장 (유저 정보 + 닉네임 점유 명단)
+        // 3. DB 저장 및 세션 ID 발급 (중복 로그인 방지용)
+        const sessionId = Date.now().toString();
+        localStorage.setItem('sessionId', sessionId);
+
         await setDoc(doc(db, "users", user.uid), {
           uid: user.uid,
           name: name,
           email: email,
           age: signupData.age,
           gender: signupData.gender,
+          currentSessionId: sessionId,
           createdAt: new Date(),
         });
         
-        // 닉네임 중복 방지용 문서 생성 (매우 가벼움)
+        // 닉네임 중복 방지용 문서 생성
         await setDoc(doc(db, "users_map", name), { uid: user.uid });
 
         alert(`${name}님, 가입을 축하합니다!`);
-        window.location.reload(); // 🚨 가입 직후 DB 연동 완벽 동기화를 위해 강제 새로고침
+        window.location.reload(); 
       } else {
         // --- [로그인] ---
-        // ⚡️ DB 조회 없이 바로 로그인 시도! (여기가 빨라진 이유)
-        await signInWithEmailAndPassword(auth, email, pw);
+        const userCredential = await signInWithEmailAndPassword(auth, email, pw);
+        
+        // 로그인 시 새로운 세션 ID 덮어쓰기 (기존 접속 중이던 기기는 로그아웃 됨)
+        const sessionId = Date.now().toString();
+        localStorage.setItem('sessionId', sessionId);
+        await setDoc(doc(db, "users", userCredential.user.uid), { currentSessionId: sessionId }, { merge: true });
+        
+        window.location.reload();
       }
     } catch (error) {
       console.error("인증 에러:", error);
