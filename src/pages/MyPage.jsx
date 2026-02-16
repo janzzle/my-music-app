@@ -59,26 +59,27 @@ const MyPage = () => {
 
         voteSnap.forEach(v => {
           const data = v.data();
+          const sid = data.stageId;
+
+          // 🚨 [핵심 규칙] stageId(고유값)가 없거나 일치하는 무대가 아니면 즉시 무시! (가수-제목 우회 매칭 절대 금지)
+          if (!sid || !sStats[sid]) return; 
+
           if (data.choices?.isUnknown) unknownCnt++;
           if (data.choices?.isLike) likeCnt++;
 
-          const sid = data.stageId;
           const voterInfo = userDict[data.uid];
-          
           if (voterInfo) {
-            // 전체 대시보드용 누적 합산
+            // 전체 대시보드 누적
             if (voterInfo.age) ageCount[voterInfo.age] = (ageCount[voterInfo.age] || 0) + 1;
             if (voterInfo.gender === 'male') genderCount.male++;
             if (voterInfo.gender === 'female') genderCount.female++;
 
-            // 개별 무대(곡별) 누적 합산
-            if (sStats[sid]) {
-              if (data.choices?.isUnknown) sStats[sid].unknown++;
-              if (data.choices?.isLike) sStats[sid].like++;
-              if (voterInfo.age) sStats[sid].ages[voterInfo.age] = (sStats[sid].ages[voterInfo.age] || 0) + 1;
-              if (voterInfo.gender === 'male') sStats[sid].genders.male++;
-              if (voterInfo.gender === 'female') sStats[sid].genders.female++;
-            }
+            // 🚨 고유값이 일치하는 개별 무대 통계에만 안전하게 누적
+            if (data.choices?.isUnknown) sStats[sid].unknown++;
+            if (data.choices?.isLike) sStats[sid].like++;
+            if (voterInfo.age) sStats[sid].ages[voterInfo.age] = (sStats[sid].ages[voterInfo.age] || 0) + 1;
+            if (voterInfo.gender === 'male') sStats[sid].genders.male++;
+            if (voterInfo.gender === 'female') sStats[sid].genders.female++;
           }
         });
 

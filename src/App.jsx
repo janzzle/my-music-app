@@ -112,22 +112,29 @@ export default function MusicPlatformApp() {
     return () => unsubscribe();
   }, []);
 
-  // 🚨 [추가] 현재 실시간으로 접속 중인지(Online) 서버에 상태 기록
+  // 🚨 [수정] 모바일 최적화: 브라우저 강제 종료 감지 확률을 높인 접속 상태 기록
   useEffect(() => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
+    
     // 접속 즉시 온라인 처리
     updateDoc(userRef, { isOnline: true }).catch(e => console.log(e));
 
     const handleUnload = () => {
-      // 브라우저를 끄거나 나갈 때 오프라인 처리
+      // 브라우저를 완전히 닫을 때 오프라인 처리 시도
       updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
     };
     
+    // PC 및 대부분의 안드로이드 닫힘 감지
     window.addEventListener("beforeunload", handleUnload);
+    // iOS 사파리 및 일부 강제 종료 상황 대응
+    window.addEventListener("unload", handleUnload);
+
     return () => {
+      // 정상적으로 컴포넌트가 언마운트(로그아웃 등) 될 때
       updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
       window.removeEventListener("beforeunload", handleUnload);
+      window.removeEventListener("unload", handleUnload);
     };
   }, [user]);
 
