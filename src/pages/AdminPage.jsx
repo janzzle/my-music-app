@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { doc, setDoc, onSnapshot, collection, query, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection, query, updateDoc, deleteDoc, getDocs, writeBatch, where } from 'firebase/firestore';
 import { Trash2, CheckCircle, Music, Mic2, BarChart, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit3, Copy, RefreshCw } from 'lucide-react';
 // 🚨 추가: 직접 만든 입력값 정제 유틸리티
 import { sanitizeInput } from '../utils/sanitize';
+import AdminQueue from '../components/admin/AdminQueue';
+import AdminRecords from '../components/admin/AdminRecords';
+import AdminStats from '../components/admin/AdminStats';
+import AdminUsers from '../components/admin/AdminUsers';
 
 const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [], audienceList = [] }) => {
   const [adminArtist, setAdminArtist] = useState('');
@@ -460,265 +464,68 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
 
       {activeTab === 'queue' ? (
         /* ================= 2. 도전 신청곡 목록 ================= */
-        <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-indigo-500/30 p-6 shadow-2xl overflow-hidden">
-          <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2 mb-4"><Mic2 className="w-5 h-5 md:w-6 md:h-6" /> 실시간 도전 신청곡 목록 (대기열)</h2>
-          <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">
-            <table className="w-full text-left text-sm text-gray-300 min-w-[1000px]">
-              <thead className="bg-black text-gray-400 uppercase text-xs sticky top-0 z-10 shadow-md">
-                <tr>
-                  <th className="p-3 border-b border-gray-700">날짜&시간</th>
-                  <th className="p-3 border-b border-gray-700 text-blue-300">가수</th>
-                  <th className="p-3 border-b border-gray-700 text-white">제목</th>
-                  <th className="p-3 border-b border-gray-700 text-center text-indigo-300">신청자(도전자)</th>
-                  <th className="p-3 border-b border-gray-700 text-center">재생 여부</th>
-                  <th className="p-3 border-b border-gray-700 text-center">같은 곡 이력</th>
-                  <th className="p-3 border-b border-gray-700 text-center">수정</th>
-                  <th className="p-3 border-b border-gray-700 text-center">삭제</th>
-                  <th className="p-3 border-b border-gray-700">고유값</th>
-                </tr>
-              </thead>
-              <tbody>
-                {challenges.length === 0 ? (
-                  <tr><td colSpan="9" className="text-center py-12 text-gray-500">대기 중인 신청곡이 없습니다.</td></tr>
-                ) : challenges.map(c => (
-                  <tr key={c.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors cursor-pointer" onClick={() => selectChallenge(c)}>
-                    <td className="p-3 text-xs font-mono">{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString() : '방금'}</td>
-                    <td className="p-3 font-bold text-blue-200">{c.artist}</td>
-                    <td className="p-3 font-bold text-white">{c.song}</td>
-                    <td className="p-3 text-center font-bold text-indigo-300">{c.applicantName}</td>
-                    <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); completeChallenge(c.id); }} className="text-xs bg-gray-700 hover:bg-green-600 text-white px-2 py-1 rounded">완료 처리</button>
-                    </td>
-                    <td className="p-3 text-center text-gray-400">{getPlayCount(c.artist, c.song)}회</td>
-                    <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleEditQueue(c); }} className="text-blue-400 hover:text-white p-1"><Edit3 className="w-4 h-4 md:w-5 md:h-5" /></button>
-                    </td>
-                    <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(c.id); }} className="text-red-400 hover:text-white p-1"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
-                    </td>
-                    <td className="p-3 text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                      <span className="truncate max-w-[80px]">{c.id}</span>
-                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(c.id); alert('복사되었습니다.'); }} className="text-gray-400 hover:text-white bg-gray-700 p-1 rounded"><Copy className="w-3 h-3 md:w-4 md:h-4" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminQueue
+          challenges={challenges}
+          getPlayCount={getPlayCount}
+          selectChallenge={selectChallenge}
+          completeChallenge={completeChallenge}
+          handleEditQueue={handleEditQueue}
+          handleDeleteChallenge={handleDeleteChallenge}
+        />
       ) : activeTab === 'records' ? (
-        /* ================= 3. 무대 기록 관리 (집계 완료) ================= */
-        <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-blue-500/30 p-6 shadow-2xl overflow-hidden">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold text-blue-400 flex items-center gap-2"><BarChart className="w-5 h-5 md:w-6 md:h-6" /> 무대 기록 관리 (집계 완료 데이터)</h2>
-            <div className="flex flex-wrap gap-2">
-              <input type="text" value={recordArtistSearch} onChange={(e) => setRecordArtistSearch(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all shadow-inner" />
-              <input type="text" value={recordSongSearch} onChange={(e) => setRecordSongSearch(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all shadow-inner" />
-              <input type="date" value={recordDateSearch} onChange={(e) => setRecordDateSearch(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-36 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all cursor-pointer shadow-inner" />
-            </div>
-          </div>
-          <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-175">
-            <table className="w-full text-left text-sm text-gray-300 min-w-[800px]">
-              <thead className="bg-black text-gray-400 uppercase text-xs sticky top-0 z-10 shadow-md">
-                <tr>
-                  <th className="p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-800" onClick={() => handleRecordSort('timestamp')}>날짜&시간 {recordSort.key === 'timestamp' && (recordSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-blue-300 cursor-pointer hover:bg-gray-800" onClick={() => handleRecordSort('artist')}>가수 {recordSort.key === 'artist' && (recordSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-white cursor-pointer hover:bg-gray-800" onClick={() => handleRecordSort('song')}>제목 {recordSort.key === 'song' && (recordSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center text-indigo-300 cursor-pointer hover:bg-gray-800" onClick={() => handleRecordSort('challengerName')}>신청자 {recordSort.key === 'challengerName' && (recordSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center text-yellow-400 cursor-pointer hover:bg-gray-800" onClick={() => handleRecordSort('points')}>점수 {recordSort.key === 'points' && (recordSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center">같은 곡 이력</th>
-                  <th className="p-3 border-b border-gray-700 text-center">수정</th>
-                  <th className="p-3 border-b border-gray-700 text-center">삭제</th>
-                  <th className="p-3 border-b border-gray-700">고유값</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...groupedData].sort((a, b) => {
-                  let valA = a[recordSort.key]; let valB = b[recordSort.key];
-                  if (recordSort.key === 'timestamp') { valA = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : 0; valB = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : 0; }
-                  else if (recordSort.key === 'points') { valA = Number(valA || 0); valB = Number(valB || 0); }
-                  if (valA < valB) return recordSort.order === 'asc' ? -1 : 1;
-                  if (valA > valB) return recordSort.order === 'asc' ? 1 : -1;
-                  return 0;
-                }).filter(g => {
-                  const matchA = g.artist ? g.artist.toLowerCase().includes(recordArtistSearch.toLowerCase()) : true;
-                  const matchS = g.song ? g.song.toLowerCase().includes(recordSongSearch.toLowerCase()) : true;
-                  const matchD = recordDateSearch ? new Date(g.timestamp?.toDate ? g.timestamp.toDate() : g.timestamp).toISOString().startsWith(recordDateSearch) : true;
-                  return matchA && matchS && matchD;
-                }).map(group => (
-                  <tr key={group.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                    <td className="p-3 text-xs font-mono">{group.timestamp?.toDate ? group.timestamp.toDate().toLocaleString() : new Date(group.timestamp).toLocaleString()}</td>
-                    <td className="p-3 font-bold text-blue-200">{group.artist}</td>
-                    <td className="p-3 font-bold text-white">{group.song}</td>
-                    <td className="p-3 text-center text-indigo-300">{group.challengerName || '익명'}</td>
-                    <td className="p-3 text-center text-yellow-400 font-bold">{group.points}점</td>
-                    <td className="p-3 text-center text-gray-400">{getPlayCount(group.artist, group.song)}회</td>
-                    <td className="p-3 text-center">
-                      <button onClick={() => handleEditRecordTitle(group)} className="p-1.5 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600 hover:text-white"><Edit3 className="w-4 h-4 md:w-5 md:h-5" /></button>
-                    </td>
-                    <td className="p-3 text-center">
-                      <button onClick={() => handleDeleteRecord(group)} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
-                    </td>
-                    <td className="p-3 text-[10px] text-gray-500 font-mono truncate max-w-[80px]">{group.id}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminRecords
+          groupedData={groupedData}
+          recordSort={recordSort}
+          handleRecordSort={handleRecordSort}
+          recordArtistSearch={recordArtistSearch}
+          setRecordArtistSearch={setRecordArtistSearch}
+          recordSongSearch={recordSongSearch}
+          setRecordSongSearch={setRecordSongSearch}
+          recordDateSearch={recordDateSearch}
+          setRecordDateSearch={setRecordDateSearch}
+          getPlayCount={getPlayCount}
+          handleEditRecordTitle={handleEditRecordTitle}
+          handleDeleteRecord={handleDeleteRecord}
+        />
       ) : activeTab === 'stats' && (
-        /* ================= 4. 도전 신청곡 통계 관리 ================= */
-        <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-pink-500/30 p-6 shadow-2xl overflow-hidden">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold text-pink-400 flex items-center gap-2"><BarChart className="w-5 h-5 md:w-6 md:h-6" /> 도전 신청곡 통계 관리</h2>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <input type="text" value={statsSearchArtist} onChange={(e) => setStatsSearchArtist(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
-              <input type="text" value={statsSearchSong} onChange={(e) => setStatsSearchSong(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
-              <input type="text" value={statsSearchChallenger} onChange={(e) => setStatsSearchChallenger(e.target.value)} placeholder="🔍 신청자 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
-              <input type="date" value={statsDateSearch} onChange={(e) => setStatsDateSearch(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-36 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-inner" />
-
-              <select value={statsStatusFilter} onChange={(e) => setStatsStatusFilter(e.target.value)} className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all cursor-pointer shadow-inner">
-                <option value="all">전체 상태</option>
-                <option value="pending">⏳ 단순 신청</option>
-                <option value="playing">▶️ 진행/카운트</option>
-                <option value="completed">✅ 완료됨</option>
-              </select>
-            </div>
-          </div>
-
-          {/* 🚨 기존의 리스트 뷰를 엑셀식 상세 테이블 뷰로 완전 개편 */}
-          <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">
-            <table className="w-full text-left text-sm text-gray-300 min-w-[800px]">
-              <thead className="bg-black text-gray-400 uppercase text-xs sticky top-0 z-10 shadow-md">
-                <tr>
-                  <th className="p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('createdAt')}>날짜&시간 {statsSort.key === 'createdAt' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-blue-300 cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('artist')}>가수 {statsSort.key === 'artist' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-white cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('song')}>제목 {statsSort.key === 'song' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center text-indigo-300 cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('applicantName')}>신청자 {statsSort.key === 'applicantName' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center text-pink-400">누적 신청 건수</th>
-                  <th className="p-3 border-b border-gray-700 text-center cursor-pointer hover:bg-gray-800" onClick={() => handleStatsSort('status')}>무대 상태 {statsSort.key === 'status' && (statsSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center">삭제</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...allChallenges].filter(c => {
-                  const matchA = c.artist ? c.artist.toLowerCase().includes(statsSearchArtist.toLowerCase()) : true;
-                  const matchS = c.song ? c.song.toLowerCase().includes(statsSearchSong.toLowerCase()) : true;
-                  const matchC = c.applicantName ? c.applicantName.toLowerCase().includes(statsSearchChallenger.toLowerCase()) : true;
-                  const matchStatus = statsStatusFilter === 'all' ? true : c.status === statsStatusFilter;
-                  const matchD = statsDateSearch ? new Date(c.createdAt?.toDate ? c.createdAt.toDate() : c.createdAt).toISOString().startsWith(statsDateSearch) : true;
-
-                  return matchA && matchS && matchC && matchStatus && matchD;
-                }).sort((a, b) => {
-                  let valA = a[statsSort.key] || ''; let valB = b[statsSort.key] || '';
-                  if (statsSort.key === 'createdAt') { valA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0; valB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0; }
-                  if (valA < valB) return statsSort.order === 'asc' ? -1 : 1;
-                  if (valA > valB) return statsSort.order === 'asc' ? 1 : -1;
-                  return 0;
-                }).map(item => (
-                  <tr key={item.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                    <td className="p-3 text-xs font-mono">{item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString() : '방금'}</td>
-                    <td className="p-3 font-bold text-blue-200">{item.artist}</td>
-                    <td className="p-3 font-bold text-white">{item.song}</td>
-                    <td className="p-3 text-center text-indigo-300">{item.applicantName || '익명'}</td>
-                    <td className="p-3 text-center text-pink-400 font-bold">{allChallenges.filter(c => c.artist === item.artist && c.song === item.song).length}건</td>
-                    <td className="p-3 text-center font-bold">
-                      <select value={item.status || 'pending'} onChange={(e) => handleUpdateChallengeStatus(item.id, e.target.value)} className={`bg-transparent appearance-none border-none outline-none cursor-pointer text-sm font-bold text-center transition-opacity hover:opacity-70 ${item.status === 'completed' ? 'text-green-400' : item.status === 'playing' ? 'text-blue-400' : 'text-gray-400'}`}>
-                        <option value="pending" className="bg-gray-800 text-gray-400">⏳ 대기중 (단순신청)</option>
-                        <option value="playing" className="bg-gray-800 text-blue-400">▶️ 카운트/진행중</option>
-                        <option value="completed" className="bg-gray-800 text-green-400">✅ 완료됨</option>
-                      </select>
-                    </td>
-                    <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(item.id); }} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminStats
+          allChallenges={allChallenges}
+          statsSearchArtist={statsSearchArtist}
+          setStatsSearchArtist={setStatsSearchArtist}
+          statsSearchSong={statsSearchSong}
+          setStatsSearchSong={setStatsSearchSong}
+          statsSearchChallenger={statsSearchChallenger}
+          setStatsSearchChallenger={setStatsSearchChallenger}
+          statsDateSearch={statsDateSearch}
+          setStatsDateSearch={setStatsDateSearch}
+          statsStatusFilter={statsStatusFilter}
+          setStatsStatusFilter={setStatsStatusFilter}
+          statsSort={statsSort}
+          handleStatsSort={handleStatsSort}
+          handleUpdateChallengeStatus={handleUpdateChallengeStatus}
+          handleDeleteChallenge={handleDeleteChallenge}
+        />
       )}
       {activeTab === 'users' && (
-        /* ================= 5. 참가자 목록 ================= */
-        <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-green-500/30 p-6 shadow-2xl overflow-hidden">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold text-green-400 flex items-center gap-2">👥 참가자 목록 및 티켓 관리</h2>
-
-            <div className="flex flex-col md:flex-row gap-2">
-              {/* 🚨 객석 새로고침(Ping-Pong) 버튼 */}
-              <button
-                onClick={handleRefreshAudience}
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs font-bold rounded-lg shadow-lg transition-colors border border-indigo-400 mr-2"
-              >
-                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4" /> 객석 새로고침
-              </button>
-
-              {/* 🚨 접속 중인 사람만 보기 토글 버튼 */}
-              <div className="flex gap-1 bg-gray-900 p-1 rounded-lg border border-gray-700">
-                <button onClick={() => setUserFilterOnline(true)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${userFilterOnline ? 'bg-green-600 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}>🟢 접속 중만 보기</button>
-                <button onClick={() => setUserFilterOnline(false)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${!userFilterOnline ? 'bg-gray-700 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}>전체보기</button>
-              </div>
-              <input type="text" value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} placeholder="🔍 이름/이메일 검색" className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-48 focus:border-green-400" />
-              <button onClick={() => {
-                // 수동 새로고침 버튼 
-                const q = query(collection(db, "users"));
-                getDocs(q).then(snapshot => {
-                  const users = [];
-                  snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
-                  setAllUsers(users);
-                });
-              }} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-colors">🔄 목록 갱신</button>
-            </div>
-          </div>
-          <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">
-            <table className="w-full text-left text-sm text-gray-300 min-w-[800px]">
-              <thead className="bg-black text-gray-400 uppercase text-xs sticky top-0 z-10 shadow-md">
-                <tr>
-                  <th className="p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-800" onClick={() => handleUserSort('name')}>이름(닉네임) {userSort.key === 'name' && (userSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700">이메일</th>
-                  {/* 🚨 접속 상태 클릭 시 정렬 가능하도록 변경 */}
-                  <th className="p-3 border-b border-gray-700 text-center cursor-pointer hover:bg-gray-800" onClick={() => handleUserSort('isOnline')}>접속 상태 {userSort.key === 'isOnline' && (userSort.order === 'desc' ? '▼' : '▲')}</th>
-                  <th className="p-3 border-b border-gray-700 text-center">권한</th>
-                  <th className="p-3 border-b border-gray-700 text-center">보유 추가 티켓</th>
-                  <th className="p-3 border-b border-gray-700 text-center">티켓 지급</th>
-                  <th className="p-3 border-b border-gray-700">고유 UID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allUsers
-                  .filter(u => (u.name || '').includes(userSearchTerm) || (u.email || '').includes(userSearchTerm))
-                  .filter(u => userFilterOnline ? u.isOnline === true : true)
-                  .sort((a, b) => {
-                    let valA = a[userSort.key]; let valB = b[userSort.key];
-                    // 접속 상태 정렬의 경우 true(1), false(0)로 환산하여 정렬
-                    if (userSort.key === 'isOnline') { valA = a.isOnline ? 1 : 0; valB = b.isOnline ? 1 : 0; }
-                    else { valA = valA || ''; valB = valB || ''; }
-
-                    if (valA < valB) return userSort.order === 'asc' ? -1 : 1;
-                    if (valA > valB) return userSort.order === 'asc' ? 1 : -1;
-                    return 0;
-                  })
-                  .map(u => {
-                    return (
-                      <tr key={u.id} className="border-b border-gray-800 hover:bg-gray-800 transition-colors">
-                        <td className="p-3 font-bold text-white">{u.name || '미설정'}</td>
-                        <td className="p-3 text-gray-400">{u.email || '없음'}</td>
-                        <td className="p-3 text-center">{u.isOnline ? <span className="text-green-400 font-bold text-xs">🟢 접속 중</span> : <span className="text-gray-500 text-xs">⚪ 오프라인</span>}</td>
-                        <td className="p-3 text-center">{u.isAdmin ? <span className="text-red-400 font-bold">관리자</span> : '일반'}</td>
-                        <td className="p-3 text-center font-bold text-yellow-400">{u.extraTickets || 0}장</td>
-                        <td className="p-3 text-center">
-                          <button onClick={() => grantTicket(u.id, u.extraTickets)} className="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-bold shadow-lg">+1 지급</button>
-                        </td>
-                        <td className="p-3 text-[10px] text-gray-500 font-mono">{u.id}</td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminUsers
+          allUsers={allUsers}
+          handleRefreshAudience={handleRefreshAudience}
+          userFilterOnline={userFilterOnline}
+          setUserFilterOnline={setUserFilterOnline}
+          userSearchTerm={userSearchTerm}
+          setUserSearchTerm={setUserSearchTerm}
+          userSort={userSort}
+          handleUserSort={handleUserSort}
+          grantTicket={grantTicket}
+          refreshUserList={() => {
+            const q = query(collection(db, "users"));
+            getDocs(q).then(snapshot => {
+              const users = [];
+              snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
+              setAllUsers(users);
+            });
+          }}
+        />
       )}
     </div>
   );

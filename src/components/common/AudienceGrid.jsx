@@ -126,17 +126,17 @@ const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, d
   const { columnCount, columnWidth, rowHeight, maxGridHeight } = useMemo(() => {
     let cols = 5; // 기본 모바일 세로 모드
     let ratio = Math.min(windowWidth / 400, 1); // 스케일 조정 (작은 화면 방어)
-    let gridHeight = windowHeight * 0.45; // 기본은 화면의 45%
+    let gridHeight = windowHeight * 0.45; // 🚨 기본적으로 화면 높이의 45%만 차지하여 밑에 패널 공간 무조건 확보
 
     if (windowWidth > 1024) {
       cols = 15;      // 데스크톱 (넓음)
-      gridHeight = windowHeight - 550; // 상단 전광판, 하단 컨트롤러 높이 및 여백 차감
+      gridHeight = windowHeight * 0.4;  // 큰 화면에선 40%만 차지하게 하여 하단 완전히 보장
     } else if (windowWidth > 768) {
       cols = 10;  // 태블릿
-      gridHeight = windowHeight - 500;
+      gridHeight = windowHeight * 0.4;
     } else if (windowWidth > 480) {
       cols = 8;   // 모바일 가로 모드
-      gridHeight = windowHeight - 450;
+      gridHeight = windowHeight * 0.45;
     }
 
     const w = (windowWidth - 32) / cols; // 좌우 여백 제외 너비
