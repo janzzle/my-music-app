@@ -12,7 +12,7 @@ import SkeletonUI from '../components/common/SkeletonUI'; // 🚨 스켈레톤 �
 import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin, leaderboard = [], liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [] }) => {
+const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin, leaderboard = [], dailyTopUsers = [], monthlyTopUsers = [] }) => {
   const [showVoteModal, setShowVoteModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
@@ -159,11 +159,6 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
 
 
   // 👇 5. [추가] 공지 전송 & 정비 토글 함수
-  const sendNotice = () => {
-    const msg = prompt("관객에게 보낼 공지 메시지:");
-    if (msg) socket.emit('show_toast', msg);
-  };
-
   const toggleMaintenance = async (val) => {
     await setDoc(doc(db, 'stage', 'info'), { maintenance: val }, { merge: true });
   };

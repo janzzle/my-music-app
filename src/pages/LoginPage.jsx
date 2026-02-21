@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
   const [name, setName] = useState('');
@@ -32,11 +32,11 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
     if (boundName && boundName !== name) {
       alert(`중복 로그인이 감지되었습니다.\n기존 계정(${boundName})을 로그아웃하고 새로운 계정으로 접속합니다.`);
     }
-    
+
     if (isSignupMode && (!signupData.age || !signupData.gender)) {
       alert("나이와 성별을 선택해주세요."); return;
     }
-    
+
     if (pw.length < 6) {
       alert("암호는 6자리 이상이어야 합니다."); return;
     }
@@ -50,7 +50,7 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
         // 1. 이미 있는 닉네임인지 체크 (가입 때는 안전을 위해 체크)
         const userRef = doc(db, "users_map", name); // users_map이라는 별도 명단 사용
         const docSnap = await getDoc(userRef);
-        
+
         if (docSnap.exists()) {
           alert("이미 존재하는 닉네임입니다."); return;
         }
@@ -73,21 +73,21 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
           currentSessionId: sessionId,
           createdAt: new Date(),
         });
-        
+
         // 닉네임 중복 방지용 문서 생성
         await setDoc(doc(db, "users_map", name), { uid: user.uid });
 
         alert(`${name}님, 가입을 축하합니다!`);
-        window.location.reload(); 
+        window.location.reload();
       } else {
         // --- [로그인] ---
         const userCredential = await signInWithEmailAndPassword(auth, email, pw);
-        
+
         // 로그인 시 새로운 세션 ID 덮어쓰기 (기존 접속 중이던 기기는 로그아웃 됨)
         const sessionId = Date.now().toString();
         localStorage.setItem('sessionId', sessionId);
         await setDoc(doc(db, "users", userCredential.user.uid), { currentSessionId: sessionId }, { merge: true });
-        
+
         window.location.reload();
       }
     } catch (error) {
@@ -106,18 +106,18 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
           <div className="p-4 bg-indigo-600 rounded-full shadow-lg"><Lock size={32} /></div>
         </div>
         <h2 className="text-2xl font-bold text-center mb-6">{isSignupMode ? '회원가입' : '입장하기'}</h2>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block text-sm text-gray-400 mb-1">닉네임</label>
-            <input 
-              type="text" value={name} 
+            <input
+              type="text" value={name}
               onFocus={() => isSignupMode && setShowTooltip(true)}
               onBlur={() => setShowTooltip(false)}
-              onChange={(e) => setName(e.target.value)} 
+              onChange={(e) => setName(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:border-indigo-500 outline-none text-white" 
-              placeholder="닉네임 입력" 
+              className="w-full p-3 bg-gray-700 rounded border border-gray-600 focus:border-indigo-500 outline-none text-white"
+              placeholder="닉네임 입력"
             />
             {isSignupMode && showTooltip && (
               <p className="text-xs text-indigo-400 mt-1">* 한글, 영문, 숫자 자유롭게 사용 가능</p>
@@ -141,9 +141,9 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
                 <label className="block text-sm text-gray-400 mb-1">성별</label>
                 <div className="flex gap-2 h-[50px]">
                   {['male', 'female'].map((g) => (
-                    <button 
+                    <button
                       key={g} type="button"
-                      onClick={() => setSignupData(prev => ({ ...prev, gender: g }))} 
+                      onClick={() => setSignupData(prev => ({ ...prev, gender: g }))}
                       className={`flex-1 rounded font-bold border transition-all ${signupData.gender === g ? 'bg-indigo-600 border-indigo-400' : 'bg-gray-700 border-gray-600 text-gray-400'}`}
                     >
                       {g === 'male' ? '남' : '여'}
@@ -166,12 +166,12 @@ const LoginPage = ({ isSignupMode, setIsSignupMode }) => {
           <button onClick={handleAuthAction} className="w-full bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg font-bold text-lg mt-4 transition shadow-lg">
             {isSignupMode ? '가입하기' : '입장하기'}
           </button>
-          
+
           <p className="text-center text-sm text-gray-400 mt-4">
-             {isSignupMode ? '이미 계정이 있으신가요?' : '처음 오셨나요?'}
-             <button onClick={() => setIsSignupMode(!isSignupMode)} className="ml-2 text-indigo-400 font-bold hover:underline">
-               {isSignupMode ? '로그인' : '회원가입'}
-             </button>
+            {isSignupMode ? '이미 계정이 있으신가요?' : '처음 오셨나요?'}
+            <button onClick={() => setIsSignupMode(!isSignupMode)} className="ml-2 text-indigo-400 font-bold hover:underline">
+              {isSignupMode ? '로그인' : '회원가입'}
+            </button>
           </p>
         </div>
       </div>

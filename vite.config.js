@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import tailwindcss from '@tailwindcss/vite' // 설치했다면 사용 가능
+
 
 export default defineConfig({
   plugins: [

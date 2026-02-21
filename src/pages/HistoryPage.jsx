@@ -56,6 +56,7 @@ const HistoryPage = () => {
 
     // 점수 내림차순 정렬
     const sorted = filtered.sort((a, b) => b.points - a.points);
+    // eslint-disable-next-line
     setLeaderboard(sorted);
   }, [allResults, rankDate, rankPeriod]);
 
