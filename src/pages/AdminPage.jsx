@@ -443,11 +443,13 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   const isEnded = stageInfo.status === 'ended';
   const isVoting = stageInfo.status === 'voting';
 
+
+
   return (
     <div className="w-full min-h-screen bg-gray-900 text-white p-6 pt-16 md:pt-24 flex flex-col items-center">
 
       {/* 🚨 탭 네비게이션 */}
-      <div className="w-full max-w-7xl flex gap-4 md:gap-6 border-b border-gray-700 mb-8 overflow-x-auto shrink-0 scrollbar-hide">
+      <div className="w-full max-w-7xl flex gap-4 md:gap-6 border-b border-gray-700 mb-6 overflow-x-auto shrink-0 scrollbar-hide relative">
         <button onClick={() => setActiveTab('queue')} className={`font-black text-sm md:text-base pb-3 border-b-4 transition-colors whitespace-nowrap ${activeTab === 'queue' ? 'border-indigo-400 text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>
           📋 도전 신청곡 목록
         </button>
@@ -461,6 +463,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
           👥 참가자 목록
         </button>
       </div>
+
 
       {activeTab === 'queue' ? (
         /* ================= 2. 도전 신청곡 목록 ================= */

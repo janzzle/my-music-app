@@ -233,6 +233,19 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
     );
   }
 
+  // 🚨 [추가] 실시간 투표율 계산 함수
+  const calculateVoteProgress = () => {
+    const totalOnline = audienceList.filter(u => u.isOnline).length || 0;
+    const currentVoted = audienceList.filter(u => u.isOnline && u.voted).length || 0;
+    let votePercent = 0;
+    if (totalOnline > 0) {
+      votePercent = Math.round((currentVoted / totalOnline) * 100);
+    }
+    return { totalOnline, currentVoted, votePercent };
+  };
+
+  const { totalOnline, currentVoted, votePercent } = calculateVoteProgress();
+
   return (
     <div className="relative w-full min-h-screen md:h-screen bg-gray-900 flex flex-col items-center overflow-x-hidden overflow-y-auto md:overflow-hidden pt-16 md:pt-20 pb-24 md:pb-0 gap-6 md:gap-0">
 
@@ -343,10 +356,33 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
       {isAdmin && (
         <div className="fixed bottom-24 left-4 md:absolute md:bottom-12 md:left-8 z-[110] flex flex-col gap-2 items-start">
 
-          {/* 리모컨 패널 */}
           {showAdminPanel && (
             <div className="bg-gray-900 border-2 border-red-500 rounded-xl p-4 shadow-2xl flex flex-col gap-3 w-80 animate-fade-in-up z-[120]">
-              <div className="text-red-400 text-sm font-bold text-center border-b border-gray-700 pb-2">🛠️ 무대 조정</div>
+              <div className="text-red-400 text-sm font-bold text-center border-b border-gray-700 pb-2 flex flex-col items-center">
+                <span>🛠️ 무대 조정</span>
+
+                {/* 🚨 실시간 투표율 게이지 (투표 중이 아닐 때도 관리자는 확인 가능하도록 상단 고정) */}
+                <div className="w-full mt-2 bg-gray-800 rounded-lg p-2 border border-gray-700/50 relative overflow-hidden">
+                  {/* 게이지 바 배경 */}
+                  <div className="absolute inset-0 bg-gray-900/50"></div>
+                  {/* 게이지 바 채움 */}
+                  <div
+                    className="absolute inset-y-0 left-0 bg-gradient-to-r from-pink-600/30 to-purple-600/30 transition-all duration-500 ease-out"
+                    style={{ width: `${votePercent}%` }}
+                  ></div>
+
+                  <div className="relative z-10 flex justify-between items-center w-full px-1">
+                    <div className="flex items-center gap-1.5">
+                      {/* 🚨 [수정] 투표 중 상태 표시 */}
+                      {isVoting ? <span className="text-xs font-black text-pink-400 animate-pulse">🔥 투표 중</span> : <span className="text-xs font-black text-gray-500">투표율</span>}
+                      <span className="text-[10px] text-gray-400 font-mono">({votePercent}%)</span>
+                    </div>
+                    <span className="text-xs font-bold text-white tracking-wider">
+                      <span className="text-pink-300">{currentVoted}</span> / {totalOnline}명
+                    </span>
+                  </div>
+                </div>
+              </div>
               {stageInfo?.status === 'ready' ? (
                 isApplied ? (
                   <div className="bg-indigo-900/40 border-2 border-indigo-500 p-3 rounded-lg relative mb-4">
