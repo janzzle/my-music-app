@@ -36,7 +36,7 @@ const UserItem = memo(({ u, isMe, showLight, isChallenger, isDailyTop1, isDailyT
       </div>
     </div>
     <div className={`relative z-20 p-1 md:p-1.5 rounded-full mb-1 border-2 border-gray-700 bg-gray-800 ${isChallenger ? 'ring-2 ring-pink-400/50' : ''} ${isMe ? 'shadow-[0_0_15px_rgba(59,130,246,0.6)]' : ''}`}>
-      <User size={14} className={`md:w-4 md:h-4 ${isMe ? 'text-blue-400' : 'text-gray-400'}`} />
+      <User className={`w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 transition-all ${isMe ? 'text-blue-400' : 'text-gray-400'}`} />
     </div>
     <div className="relative flex items-center z-20">
       {isMonthlyTop && <span className={`absolute -left-3 md:-left-4 -top-5 md:-top-6 text-[4px] md:text-[5px] font-black px-1 py-[1px] rounded shadow-sm transform -rotate-[20deg] z-30 border ${monthlyBadgeStyle}`}>{currentMonthNum}월 Top</span>}
@@ -122,20 +122,34 @@ const Cell = memo(({ columnIndex, rowIndex, style, ...cellProps }) => {
 const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, dailyTopUsers = [], monthlyTopUsers = [], currentUser = null }) => {
   const [windowWidth, windowHeight] = useWindowSize();
 
-  // 🚨 화면 너비에 따른 Column(가로 열) 수 및 셀 크기 계산
-  const { columnCount, columnWidth, rowHeight } = useMemo(() => {
+  // 🚨 화면 너비에 따른 Column(가로 열) 수 및 셀 크기, 객석 최대 높이 계산
+  const { columnCount, columnWidth, rowHeight, maxGridHeight } = useMemo(() => {
     let cols = 5; // 기본 모바일 세로 모드
     let ratio = Math.min(windowWidth / 400, 1); // 스케일 조정 (작은 화면 방어)
+    let gridHeight = windowHeight * 0.45; // 기본은 화면의 45%
 
-    if (windowWidth > 1024) cols = 15;      // 데스크톱 (넓음)
-    else if (windowWidth > 768) cols = 10;  // 태블릿
-    else if (windowWidth > 480) cols = 8;   // 모바일 가로 모드
+    if (windowWidth > 1024) {
+      cols = 15;      // 데스크톱 (넓음)
+      gridHeight = windowHeight - 550; // 상단 전광판, 하단 컨트롤러 높이 및 여백 차감
+    } else if (windowWidth > 768) {
+      cols = 10;  // 태블릿
+      gridHeight = windowHeight - 500;
+    } else if (windowWidth > 480) {
+      cols = 8;   // 모바일 가로 모드
+      gridHeight = windowHeight - 450;
+    }
 
     const w = (windowWidth - 32) / cols; // 좌우 여백 제외 너비
     const h = 100 * ratio; // 아이템 높이 안정화
 
-    return { columnCount: cols, columnWidth: Math.max(w, 40), rowHeight: Math.max(h, 90) };
-  }, [windowWidth]);
+    // 레이아웃이 깨지지 않게 최소 높이 150px 방어
+    return {
+      columnCount: cols,
+      columnWidth: Math.max(w, 40),
+      rowHeight: Math.max(h, 90),
+      maxGridHeight: Math.max(gridHeight, 150)
+    };
+  }, [windowWidth, windowHeight]);
 
   const rowCount = Math.ceil(audienceList.length / columnCount);
 
@@ -160,7 +174,7 @@ const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, d
         className="scrollbar-hide" // 커스텀 스크롤 숨김 클래스
         columnCount={columnCount}
         columnWidth={columnWidth}
-        height={Math.min(windowHeight * 0.5, rowCount * rowHeight)} // 🚨 최대 화면의 50% 높이까지만 표시, 넘치면 가상 스크롤 렌더링 작동
+        height={Math.min(maxGridHeight, rowCount * rowHeight)} // 🚨 계산된 뷰포트별 최대 높이 적용
         rowCount={rowCount}
         rowHeight={rowHeight}
         width={windowWidth - 32}

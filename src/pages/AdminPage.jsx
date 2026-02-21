@@ -461,7 +461,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
       {activeTab === 'queue' ? (
         /* ================= 2. 도전 신청곡 목록 ================= */
         <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-indigo-500/30 p-6 shadow-2xl overflow-hidden">
-          <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2 mb-4"><Mic2 size={20} /> 실시간 도전 신청곡 목록 (대기열)</h2>
+          <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2 mb-4"><Mic2 className="w-5 h-5 md:w-6 md:h-6" /> 실시간 도전 신청곡 목록 (대기열)</h2>
           <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">
             <table className="w-full text-left text-sm text-gray-300 min-w-[1000px]">
               <thead className="bg-black text-gray-400 uppercase text-xs sticky top-0 z-10 shadow-md">
@@ -491,14 +491,14 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     </td>
                     <td className="p-3 text-center text-gray-400">{getPlayCount(c.artist, c.song)}회</td>
                     <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleEditQueue(c); }} className="text-blue-400 hover:text-white p-1"><Edit3 size={16} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleEditQueue(c); }} className="text-blue-400 hover:text-white p-1"><Edit3 className="w-4 h-4 md:w-5 md:h-5" /></button>
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(c.id); }} className="text-red-400 hover:text-white p-1"><Trash2 size={16} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(c.id); }} className="text-red-400 hover:text-white p-1"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
                     </td>
                     <td className="p-3 text-[10px] text-gray-500 font-mono flex items-center gap-1">
                       <span className="truncate max-w-[80px]">{c.id}</span>
-                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(c.id); alert('복사되었습니다.'); }} className="text-gray-400 hover:text-white bg-gray-700 p-1 rounded"><Copy size={12} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(c.id); alert('복사되었습니다.'); }} className="text-gray-400 hover:text-white bg-gray-700 p-1 rounded"><Copy className="w-3 h-3 md:w-4 md:h-4" /></button>
                     </td>
                   </tr>
                 ))}
@@ -510,7 +510,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
         /* ================= 3. 무대 기록 관리 (집계 완료) ================= */
         <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-blue-500/30 p-6 shadow-2xl overflow-hidden">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold text-blue-400 flex items-center gap-2"><BarChart size={20} /> 무대 기록 관리 (집계 완료 데이터)</h2>
+            <h2 className="text-xl font-bold text-blue-400 flex items-center gap-2"><BarChart className="w-5 h-5 md:w-6 md:h-6" /> 무대 기록 관리 (집계 완료 데이터)</h2>
             <div className="flex flex-wrap gap-2">
               <input type="text" value={recordArtistSearch} onChange={(e) => setRecordArtistSearch(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all shadow-inner" />
               <input type="text" value={recordSongSearch} onChange={(e) => setRecordSongSearch(e.target.value)} placeholder="🔍 제목 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all shadow-inner" />
@@ -554,10 +554,10 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                     <td className="p-3 text-center text-yellow-400 font-bold">{group.points}점</td>
                     <td className="p-3 text-center text-gray-400">{getPlayCount(group.artist, group.song)}회</td>
                     <td className="p-3 text-center">
-                      <button onClick={() => handleEditRecordTitle(group)} className="p-1.5 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600 hover:text-white"><Edit3 size={16} /></button>
+                      <button onClick={() => handleEditRecordTitle(group)} className="p-1.5 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600 hover:text-white"><Edit3 className="w-4 h-4 md:w-5 md:h-5" /></button>
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={() => handleDeleteRecord(group)} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16} /></button>
+                      <button onClick={() => handleDeleteRecord(group)} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
                     </td>
                     <td className="p-3 text-[10px] text-gray-500 font-mono truncate max-w-[80px]">{group.id}</td>
                   </tr>
@@ -570,7 +570,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
         /* ================= 4. 도전 신청곡 통계 관리 ================= */
         <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-pink-500/30 p-6 shadow-2xl overflow-hidden">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <h2 className="text-xl font-bold text-pink-400 flex items-center gap-2"><BarChart size={20} /> 도전 신청곡 통계 관리</h2>
+            <h2 className="text-xl font-bold text-pink-400 flex items-center gap-2"><BarChart className="w-5 h-5 md:w-6 md:h-6" /> 도전 신청곡 통계 관리</h2>
 
             <div className="flex flex-wrap items-center gap-2">
               <input type="text" value={statsSearchArtist} onChange={(e) => setStatsSearchArtist(e.target.value)} placeholder="🔍 가수 검색" className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-32 focus:border-pink-400 focus:ring-1 focus:ring-pink-400 transition-all shadow-inner" />
@@ -631,7 +631,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                       </select>
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(item.id); }} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 size={16} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); handleDeleteChallenge(item.id); }} className="p-1.5 bg-red-600/20 text-red-400 rounded hover:bg-red-600 hover:text-white"><Trash2 className="w-4 h-4 md:w-5 md:h-5" /></button>
                     </td>
                   </tr>
                 ))}
@@ -652,7 +652,7 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                 onClick={handleRefreshAudience}
                 className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 text-xs font-bold rounded-lg shadow-lg transition-colors border border-indigo-400 mr-2"
               >
-                <RefreshCw size={14} /> 객석 새로고침
+                <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4" /> 객석 새로고침
               </button>
 
               {/* 🚨 접속 중인 사람만 보기 토글 버튼 */}

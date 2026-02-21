@@ -20,7 +20,7 @@ const ChallengePage = () => {
   const [userTickets, setUserTickets] = useState(0);
   const [hasUsedDailyFree, setHasUsedDailyFree] = useState(false);
   const [noTickets, setNoTickets] = useState(false);
-  
+
   // 🚨 [추가] 1인 1대기열 방어 로직 (DB 감시)
   useEffect(() => {
     const checkPending = () => {
@@ -43,11 +43,11 @@ const ChallengePage = () => {
           if (userDoc.exists()) {
             const data = userDoc.data();
             const todayStr = new Date().toDateString();
-            
+
             const usedFreeToday = data.lastFreeTicketDate === todayStr;
             setHasUsedDailyFree(usedFreeToday);
             setUserTickets(data.extraTickets || 0);
-            
+
             if (!snapshot.empty) {
               setPendingChallenge({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
               setNoTickets(false);
@@ -55,7 +55,7 @@ const ChallengePage = () => {
               setPendingChallenge(null);
               setNoTickets(true);
             } else {
-              setPendingChallenge(null); 
+              setPendingChallenge(null);
               setNoTickets(false);
             }
           }
@@ -110,7 +110,7 @@ const ChallengePage = () => {
         await updateDoc(userRef, { extraTickets: userTickets - 1 });
       }
       alert("신청이 접수되었습니다! 감사합니다. 🎉");
-      
+
       // 4. 입력창 초기화
       setArtist('');
       setSong('');
@@ -144,7 +144,7 @@ const ChallengePage = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">도전 신청 기회를 모두 사용했습니다!</h2>
           <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
-            매일 1회의 신청 기회가 제공됩니다.<br/>
+            매일 1회의 신청 기회가 제공됩니다.<br />
             추가 신청을 원하시면 관리자에게 요청하세요.
           </p>
         </div>
@@ -152,12 +152,12 @@ const ChallengePage = () => {
         // 🚨 이미 대기 중인 신청곡이 있을 때 (폼 숨김)
         <div className="bg-white p-8 rounded-2xl shadow-xl border border-indigo-100 flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
-            <Clock size={32} className="text-indigo-500 animate-pulse" />
+            <Clock className="w-8 h-8 md:w-10 md:h-10 text-indigo-500 animate-pulse" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">이미 대기 중인 신청곡이 있습니다!</h2>
           <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
-            재신청을 원할 경우 내 신청내역에서 삭제 후 다시 신청할 수 있습니다.<br/>
-            
+            재신청을 원할 경우 내 신청내역에서 삭제 후 다시 신청할 수 있습니다.<br />
+
           </p>
 
           <div className="w-full bg-indigo-50 border-2 border-indigo-200 rounded-xl p-5 text-center shadow-inner">
@@ -180,64 +180,64 @@ const ChallengePage = () => {
       ) : (
         // ✅ 대기 중인 곡이 없을 때 보여주는 신청 폼
         <form className="bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-gray-100 space-y-6" onSubmit={(e) => e.preventDefault()}>
-          
+
           {/* 1. 가수 입력 */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <User size={16} className="text-indigo-500" /> 가수 이름
+              <User className="w-4 h-4 md:w-5 md:h-5 text-indigo-500" /> 가수 이름
             </label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={artist} // 👈 연결
               onChange={(e) => setArtist(e.target.value)} // 👈 연결
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 outline-none transition-all" 
-              placeholder="예: 박효신, 아이유..." 
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+              placeholder="예: 박효신, 아이유..."
             />
           </div>
 
           {/* 2. 노래 제목 입력 */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Music size={16} className="text-pink-500" /> 노래 제목
+              <Music className="w-4 h-4 md:w-5 md:h-5 text-pink-500" /> 노래 제목
             </label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={song} // 👈 연결
               onChange={(e) => setSong(e.target.value)} // 👈 연결
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-pink-500 focus:bg-white focus:ring-2 focus:ring-pink-200 outline-none transition-all" 
-              placeholder="곡명을 정확하게 입력해주세요" 
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-pink-500 focus:bg-white focus:ring-2 focus:ring-pink-200 outline-none transition-all"
+              placeholder="곡명을 정확하게 입력해주세요"
             />
           </div>
 
           {/* 3. 링크 입력 */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <Link2 size={16} className="text-blue-500" /> 유튜브/음원 링크
+              <Link2 className="w-4 h-4 md:w-5 md:h-5 text-blue-500" /> 유튜브/음원 링크
             </label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={link} // 👈 연결
               onChange={(e) => setLink(e.target.value)} // 👈 연결
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 outline-none transition-all" 
-              placeholder="https://youtu.be/..." 
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+              placeholder="https://youtu.be/..."
             />
           </div>
 
           {/* 4. 사연 입력 */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-              <PenTool size={16} className="text-yellow-500" /> 추천 사연
+              <PenTool className="w-4 h-4 md:w-5 md:h-5 text-yellow-500" /> 추천 사연
             </label>
-            <textarea 
+            <textarea
               value={message} // 👈 연결
               onChange={(e) => setMessage(e.target.value)} // 👈 연결
-              className="w-full p-4 h-40 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-200 outline-none resize-none transition-all leading-relaxed" 
+              className="w-full p-4 h-40 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-200 outline-none resize-none transition-all leading-relaxed"
               placeholder="이 노래를 추천하는 이유, 가수와의 에피소드, 곡에 얽힌 나만의 추억 등을 자유롭게 적어주세요. (구체적일수록 선정 확률 UP!)"
             ></textarea>
           </div>
 
           {/* 제출 버튼 */}
-          <button 
+          <button
             type="button"
             onClick={handleSubmit} // 👈 핸들러 연결
             disabled={isSubmitting} // 👈 전송 중 중복 클릭 방지

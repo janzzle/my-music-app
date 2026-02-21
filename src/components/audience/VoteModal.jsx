@@ -6,6 +6,13 @@ import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 const VoteModal = ({ onClose, stageInfo }) => {
   const [voteStatus, setVoteStatus] = useState({ isUnknown: false, isLike: false });
 
+  // 🚨 [추가] 햅틱 피드백 함수 (모바일 기기 등 지원 시 작동)
+  const triggerHaptic = (pattern = 50) => {
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(pattern);
+    }
+  };
+
   const submitVote = async () => {
     if (!auth.currentUser) return alert("로그인이 필요합니다.");
 
@@ -67,6 +74,9 @@ const VoteModal = ({ onClose, stageInfo }) => {
       localVoted[stageInfo.stageId] = true;
       localStorage.setItem('votedStages', JSON.stringify(localVoted));
 
+      // 🚨 [UX 개선] 투표 제출 성공 시 경쾌한 2단 진동 피드백
+      triggerHaptic([30, 50, 30]);
+
       alert(`${points}점 투표 완료!`);
       onClose();
 
@@ -92,29 +102,35 @@ const VoteModal = ({ onClose, stageInfo }) => {
 
         <div className="flex gap-3 mb-6">
           <button
-            onClick={() => setVoteStatus({ ...voteStatus, isUnknown: !voteStatus.isUnknown })}
-            className={`flex-1 h-32 rounded-xl flex flex-col items-center justify-center gap-2 transition-all border-2 
-              ${voteStatus.isUnknown ? 'bg-gray-800 text-white border-gray-800 scale-105' : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'}`}
+            onClick={() => {
+              triggerHaptic(20); // 가벼운 진동
+              setVoteStatus({ ...voteStatus, isUnknown: !voteStatus.isUnknown });
+            }}
+            className={`flex-1 h-32 rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200 border-2 active:scale-95
+              ${voteStatus.isUnknown ? 'bg-gray-800 text-white border-gray-800 scale-105 shadow-[0_0_15px_rgba(0,0,0,0.3)]' : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'}`}
           >
             <HelpCircle size={32} />
             <span className="font-bold">처음 들어봤어요</span>
           </button>
 
           <button
-            onClick={() => setVoteStatus({ ...voteStatus, isLike: !voteStatus.isLike })}
-            className={`flex-1 h-32 rounded-xl flex flex-col items-center justify-center gap-2 transition-all border-2 
-              ${voteStatus.isLike ? 'bg-pink-500 text-white border-pink-500 scale-105' : 'bg-pink-50 text-pink-400 border-pink-100 hover:bg-pink-100'}`}
+            onClick={() => {
+              triggerHaptic(20); // 가벼운 진동
+              setVoteStatus({ ...voteStatus, isLike: !voteStatus.isLike });
+            }}
+            className={`flex-1 h-32 rounded-xl flex flex-col items-center justify-center gap-2 transition-all duration-200 border-2 active:scale-95
+              ${voteStatus.isLike ? 'bg-pink-500 text-white border-pink-500 scale-105 shadow-[0_0_15px_rgba(236,72,153,0.5)]' : 'bg-pink-50 text-pink-400 border-pink-100 hover:bg-pink-100'}`}
           >
             <ThumbsUp size={32} />
             <span className="font-bold">좋아요!</span>
           </button>
         </div>
-        
+
         <p className="text-sm font-bold text-gray-400 mb-3 text-center tracking-tight">
           해당하는 버튼을 누르고, 없다면 그냥 제출!
         </p>
 
-        <button onClick={submitVote} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-black text-lg shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2">
+        <button onClick={submitVote} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-black text-lg shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] transition-all duration-200 active:scale-95 active:shadow-none translate-y-0 active:translate-y-1 flex items-center justify-center gap-2">
           <Send size={20} /> 투표 제출하기
         </button>
       </div>
