@@ -166,6 +166,7 @@ const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, d
         width={windowWidth - 32}
         cellProps={itemData} // v2의 props 전달 방식
         cellComponent={Cell}
+        style={{ overflowX: 'hidden' }} // 🚨 이상한 가로 스크롤바 강제 제거
       />
     </div>
   );
