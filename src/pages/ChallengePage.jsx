@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { PenTool, Link2, Music, User, Clock } from 'lucide-react';
+import { PenTool, Link2, Music, User, Clock, BarChart2, X, Users } from 'lucide-react';
 // 👇 [추가] Firebase 연동을 위한 임포트
 import { db, auth } from '../firebase';
-import { collection, addDoc, serverTimestamp, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 
 const ChallengePage = () => {
   // 👇 [추가] 입력값을 관리하기 위한 State 선언
@@ -20,6 +20,15 @@ const ChallengePage = () => {
   const [userTickets, setUserTickets] = useState(0);
   const [hasUsedDailyFree, setHasUsedDailyFree] = useState(false);
   const [noTickets, setNoTickets] = useState(false);
+
+  // 👇 [추가] 접속자 통계 모달용 상태
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [isStatsLoading, setIsStatsLoading] = useState(false);
+  const [statsData, setStatsData] = useState({
+    totalCount: 0,
+    genderCount: { male: 0, female: 0, unknown: 0 },
+    ageCount: {}
+  });
 
   // 🚨 [추가] 1인 1대기열 방어 로직 (DB 감시)
   useEffect(() => {
@@ -71,6 +80,54 @@ const ChallengePage = () => {
     const timer = setTimeout(checkPending, 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // 👇 [추가] 접속자 통계 데이터 패칭 함수
+  const fetchAudienceStats = async () => {
+    setIsStatsLoading(true);
+    setShowStatsModal(true);
+    try {
+      // isOnline == true 인 사용자만 불러옴
+      const q = query(collection(db, "users"), where("isOnline", "==", true));
+      const snapshot = await getDocs(q);
+
+      let total = 0;
+      let maleCount = 0;
+      let femaleCount = 0;
+      let unknownGenderCount = 0;
+      const ages = {
+        '10대': 0, '20대': 0, '30대': 0, '40대': 0, '50대': 0,
+        '60대': 0, '70대': 0, '80대': 0, '90대 이상': 0, '미상': 0
+      };
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        total++;
+
+        // 성별 통계
+        if (data.gender === 'male') maleCount++;
+        else if (data.gender === 'female') femaleCount++;
+        else unknownGenderCount++;
+
+        // 연령대 통계
+        const age = data.age || '미상';
+        if (ages[age] !== undefined) ages[age]++;
+        else ages['미상']++;
+      });
+
+      setStatsData({
+        totalCount: total,
+        genderCount: { male: maleCount, female: femaleCount, unknown: unknownGenderCount },
+        ageCount: ages
+      });
+
+    } catch (error) {
+      console.error("통계 불러오기 실패:", error);
+      alert("데이터를 불러오는데 실패했습니다.");
+      setShowStatsModal(false);
+    } finally {
+      setIsStatsLoading(false);
+    }
+  };
 
   // 👇 [추가] 제출 핸들러 함수
   const handleSubmit = async () => {
@@ -129,7 +186,16 @@ const ChallengePage = () => {
     <div className="w-full px-4 md:px-6 max-w-2xl mx-auto min-h-screen overflow-y-auto pt-20 pb-32">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-black mb-2 text-gray-900">✨ 도전 신청</h2>
-        <p className="text-gray-500 text-sm">당신의 숨은 인생곡을 세상에 소개해주세요.</p>
+        <p className="text-gray-500 text-sm mb-4">당신의 숨은 인생곡을 세상에 소개해주세요.</p>
+
+        {/* 👇 [추가] 통계 보기 버튼 */}
+        <button
+          onClick={fetchAudienceStats}
+          className="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold py-2 px-4 rounded-full text-sm transition-all shadow-sm border border-indigo-100 active:scale-95"
+        >
+          <BarChart2 className="w-4 h-4" />
+          현재 접속자 성별/연령대 보기
+        </button>
       </div>
 
       {isLoading ? (
@@ -248,6 +314,132 @@ const ChallengePage = () => {
             {isSubmitting ? '전송 중...' : '도전 신청하기'}
           </button>
         </form>
+      )}
+
+      {/* 👇 [추가] 접속자 통계 모달 UI */}
+      {showStatsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowStatsModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+
+            {/* 모달 헤더 */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white flex justify-between items-center">
+              <div className="flex items-center gap-2 font-bold text-lg">
+                <Users className="w-5 h-5" />
+                현재 실시간 객석 통계
+              </div>
+              <button
+                onClick={() => setShowStatsModal(false)}
+                className="p-1 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* 모달 내용 */}
+            <div className="p-6">
+              {isStatsLoading ? (
+                // 로딩 스켈레톤
+                <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                  <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                  <p className="text-gray-500 font-medium animate-pulse">실시간 데이터를 분석 중입니다...</p>
+                </div>
+              ) : statsData.totalCount === 0 ? (
+                // 접속자 없음
+                <div className="text-center py-10 text-gray-500">
+                  <span className="text-4xl mb-3 block opacity-50">📭</span>
+                  <p className="font-bold">현재 온라인 상태인 접속자가 없습니다.</p>
+                </div>
+              ) : (
+                // 통계 결과 표시
+                <div className="space-y-6">
+                  {/* 총 접속자 */}
+                  <div className="bg-indigo-50 rounded-xl p-4 text-center border border-indigo-100">
+                    <span className="text-sm font-bold text-indigo-600 block mb-1">현재 온라인 관객</span>
+                    <span className="text-3xl font-black text-gray-900">{statsData.totalCount}명</span>
+                  </div>
+
+                  {/* 성별 비율 */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> 성별 비율
+                    </h3>
+
+                    <div className="flex h-6 rounded-full overflow-hidden shadow-inner mb-2 bg-gray-100">
+                      {statsData.genderCount.male > 0 && (
+                        <div
+                          className="bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold transition-all duration-1000"
+                          style={{ width: `${(statsData.genderCount.male / statsData.totalCount) * 100}%` }}
+                        >
+                          {(statsData.genderCount.male / statsData.totalCount * 100).toFixed(0)}%
+                        </div>
+                      )}
+                      {statsData.genderCount.female > 0 && (
+                        <div
+                          className="bg-pink-500 flex items-center justify-center text-[10px] text-white font-bold transition-all duration-1000"
+                          style={{ width: `${(statsData.genderCount.female / statsData.totalCount) * 100}%` }}
+                        >
+                          {(statsData.genderCount.female / statsData.totalCount * 100).toFixed(0)}%
+                        </div>
+                      )}
+                      {statsData.genderCount.unknown > 0 && (
+                        <div
+                          className="bg-gray-400 flex items-center justify-center text-[10px] text-white font-bold transition-all duration-1000"
+                          style={{ width: `${(statsData.genderCount.unknown / statsData.totalCount) * 100}%` }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex justify-between text-xs font-bold px-1">
+                      <span className="text-blue-600">남자 {statsData.genderCount.male}명</span>
+                      {statsData.genderCount.unknown > 0 && <span className="text-gray-500">미상 {statsData.genderCount.unknown}명</span>}
+                      <span className="text-pink-600">여자 {statsData.genderCount.female}명</span>
+                    </div>
+                  </div>
+
+                  {/* 연령대 분포 */}
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> 연령대 분포
+                    </h3>
+                    <div className="space-y-2.5">
+                      {Object.entries(statsData.ageCount)
+                        // 인원이 0명인 연령대는 숨기기 (옵션)
+                        // eslint-disable-next-line
+                        .filter(([_, count]) => count > 0)
+                        .sort(([ageA], [ageB]) => ageA.localeCompare(ageB)) // 10대, 20대 순 정렬
+                        .map(([age, count]) => {
+                          const percent = Math.round((count / statsData.totalCount) * 100);
+                          return (
+                            <div key={age} className="flex items-center gap-3 text-sm">
+                              <span className="w-16 font-bold text-gray-600 text-right shrink-0">{age}</span>
+                              <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden relative">
+                                <div
+                                  className="absolute top-0 left-0 h-full bg-orange-400 rounded-full transition-all duration-1000"
+                                  style={{ width: `${percent}%` }}
+                                ></div>
+                              </div>
+                              <span className="w-12 font-bold text-gray-900 text-right">{count}명</span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+
+            {/* 모달 푸터 */}
+            <div className="bg-gray-50 p-4 text-center border-t border-gray-100">
+              <button
+                onClick={() => setShowStatsModal(false)}
+                className="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl transition-colors"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
