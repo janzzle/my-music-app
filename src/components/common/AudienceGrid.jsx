@@ -1,7 +1,7 @@
 import React, { memo, useState, useEffect, useMemo } from 'react';
 import { User } from 'lucide-react';
-// 🚨 가상화 라이브러리 추가
-import { FixedSizeGrid as Grid } from 'react-window';
+// 🚨 가상화 라이브러리 추가 (react-window v2부터는 통합된 Grid 사용)
+import { Grid } from 'react-window';
 
 // 1. 커스텀 훅: 창 크기 감지 (반응형 객석 구성용)
 function useWindowSize() {
@@ -63,9 +63,9 @@ const UserItem = memo(({ u, isMe, showLight, isChallenger, isDailyTop1, isDailyT
   );
 });
 
-// 3. Grid Cell 컴포넌트: react-window가 렌더링 할 때 호출
-const Cell = memo(({ columnIndex, rowIndex, style, data }) => {
-  const { items, columnCount, stageInfo, isBlindActive, dailyTopUsers, monthlyTopUsers, currentUser } = data;
+// 3. Grid Cell 컴포넌트: react-window가 렌더링 할 때 호출 (v2 API)
+const Cell = memo(({ columnIndex, rowIndex, style, ...cellProps }) => {
+  const { items, columnCount, stageInfo, isBlindActive, dailyTopUsers, monthlyTopUsers, currentUser } = cellProps;
   const itemIndex = rowIndex * columnCount + columnIndex;
   const u = items[itemIndex];
 
@@ -155,7 +155,7 @@ const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, d
 
   return (
     <div className="w-full flex justify-center bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-inner p-2">
-      {/* react-window 가상 그리드 컴포넌트 호출 */}
+      {/* react-window 가상 그리드 컴포넌트 호출 (v2 문법 호환성 적용) */}
       <Grid
         className="scrollbar-hide" // 커스텀 스크롤 숨김 클래스
         columnCount={columnCount}
@@ -164,10 +164,9 @@ const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, d
         rowCount={rowCount}
         rowHeight={rowHeight}
         width={windowWidth - 32}
-        itemData={itemData}
-      >
-        {Cell}
-      </Grid>
+        cellProps={itemData} // v2의 props 전달 방식
+        cellComponent={Cell}
+      />
     </div>
   );
 });
