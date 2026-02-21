@@ -53,15 +53,19 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   const handleUserSort = (key) => setUserSort({ key, order: userSort.key === key && userSort.order === 'desc' ? 'asc' : 'desc' });
 
   useEffect(() => {
-    // 🚨 유저 목록 실시간 감지(onSnapshot)로 교체하여 접속 상태 바로바로 반영
-    const q = query(collection(db, "users"));
-    const unsub = onSnapshot(q, (snapshot) => {
+    // 🚨 5단계 최적화: 탭을 열 때만 getDocs로 단발성 호출하여 전체 유저(참가자)를 가져오게 변경
+    const fetchUsers = async () => {
+      const q = query(collection(db, "users"));
+      const snapshot = await getDocs(q);
       const users = [];
       snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
       setAllUsers(users);
-    });
-    return () => unsub();
-  }, []);
+    };
+
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
 
   const grantTicket = async (userId, currentTickets) => {
     const input = window.prompt(`현재 티켓: ${currentTickets || 0}장\n지급(+) 또는 차감(-)할 티켓 수량을 입력하세요.\n(예: 2, -1)`, "1");
@@ -657,6 +661,15 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
                 <button onClick={() => setUserFilterOnline(false)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${!userFilterOnline ? 'bg-gray-700 text-white shadow-lg' : 'text-gray-400 hover:text-gray-200'}`}>전체보기</button>
               </div>
               <input type="text" value={userSearchTerm} onChange={(e) => setUserSearchTerm(e.target.value)} placeholder="🔍 이름/이메일 검색" className="bg-gray-900 border border-gray-600 rounded-lg px-3 py-1.5 text-sm outline-none text-white w-48 focus:border-green-400" />
+              <button onClick={() => {
+                // 수동 새로고침 버튼 
+                const q = query(collection(db, "users"));
+                getDocs(q).then(snapshot => {
+                  const users = [];
+                  snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
+                  setAllUsers(users);
+                });
+              }} className="bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-colors">🔄 목록 갱신</button>
             </div>
           </div>
           <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">

@@ -70,15 +70,11 @@ export default function MusicPlatformApp() {
     });
     return () => unsub();
   }, []);
-  // 🚨 전체 가입자를 실시간으로 불러와 객석을 채우기
+  // 🚨 [최적화 수정] 기존의 1만 명 전체 가입자 24시간 실시간 감시(onSnapshot) 코드 삭제
+  // 5단계 객석 최적화를 위해 실시간 접속자 및 객석 관련 통신 구조를 개편합니다.
+  // (임시로 allUsers는 빈 배열 또는 로컬 상태로 둠)
   useEffect(() => {
-    const q = query(collection(db, "users"));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const users = [];
-      snapshot.forEach(docSnap => users.push(docSnap.data()));
-      setAllUsers(users);
-    });
-    return () => unsub();
+    // getDocs 처리는 AudienceGrid 최적화와 함께 연계하여 세팅 예정
   }, []);
   // 🚨 수동 업데이트된 '현재 순위'를 DB에서 가져와 화면에 표시
   useEffect(() => {
@@ -138,9 +134,9 @@ export default function MusicPlatformApp() {
     };
   }, [user]);
 
-  // 실시간 무대 정보 동기화 및 🚨 관리자 객석 새로고침(Ping-Pong) 응답 로직
+  // 실시간 무대 정보 동기화 및 🚨 관리자 객석 새로고침(Ping-Pong) 응답 및 객석 갱신 로직
   useEffect(() => {
-    const unsubscribe = onSnapshot(doc(db, "stage", "info"), (docSnap) => {
+    const unsubscribe = onSnapshot(doc(db, "stage", "info"), async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setStageInfo(data);
@@ -148,15 +144,27 @@ export default function MusicPlatformApp() {
         // 🚨 관리자가 '객석 새로고침(Ping)'을 눌렀을 때의 응답(Pong) 로직
         if (user && data.pingTime) {
           const localLastPing = sessionStorage.getItem('lastPing');
-          // 관리자가 보낸 핑 시간이 내가 마지막으로 응답한 시간과 다르다면 (새로운 출석체크라면)
           if (localLastPing !== data.pingTime.toString()) {
-            sessionStorage.setItem('lastPing', data.pingTime.toString()); // 응답 기억
-            // 서버에 "저 살아있어요!" 라고 응답
+            sessionStorage.setItem('lastPing', data.pingTime.toString());
             updateDoc(doc(db, "users", user.uid), {
               isOnline: true,
               lastPong: data.pingTime
             }).catch(e => console.error("Pong 에러:", e));
           }
+        }
+
+        // 🚨 5단계: 실시간 1만명 감시를 껐으므로, 무대 정보(특히 pingTime 변경 시점 등)가 바뀔 때 전체 접속자를 단발성(getDocs)으로 가져와서 객석에 채웁니다.
+        try {
+          // TODO: 접속자 수가 너무 많을 경우 where("isOnline", "==", true) 로 인덱싱하여 가져오는 것이 더욱 좋습니다.
+          const q = query(collection(db, "users"));
+          const userSnap = await getDocs(q);
+          const activeUsers = [];
+          userSnap.forEach(d => {
+            if (d.data().isOnline) activeUsers.push(d.data());
+          });
+          setAllUsers(activeUsers);
+        } catch (e) {
+          console.error("접속자 새로고침 실패:", e);
         }
       }
     });
