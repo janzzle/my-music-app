@@ -70,12 +70,20 @@ export default function MusicPlatformApp() {
     });
     return () => unsub();
   }, []);
-  // 🚨 [최적화 수정] 기존의 1만 명 전체 가입자 24시간 실시간 감시(onSnapshot) 코드 삭제
-  // 5단계 객석 최적화를 위해 실시간 접속자 및 객석 관련 통신 구조를 개편합니다.
-  // (임시로 allUsers는 빈 배열 또는 로컬 상태로 둠)
+  // 🚨 5단계 객석 실시간 감지 복구 (isOnline: true 인 접속자만!)
   useEffect(() => {
-    // getDocs 처리는 AudienceGrid 최적화와 함께 연계하여 세팅 예정
+    // 1만명 전체를 돌지 않고, 현재 접속 중인 사람만 쿼리! (과금 최적화)
+    const q = query(collection(db, "users"), where("isOnline", "==", true));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const activeUsers = [];
+      snapshot.forEach(docSnap => {
+        activeUsers.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setAllUsers(activeUsers);
+    });
+    return () => unsub();
   }, []);
+
   // 🚨 수동 업데이트된 '현재 순위'를 DB에서 가져와 화면에 표시
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "stage", "ranking"), (docSnap) => {
@@ -116,21 +124,12 @@ export default function MusicPlatformApp() {
     // 접속 즉시 온라인 처리
     updateDoc(userRef, { isOnline: true }).catch(e => console.log(e));
 
-    const handleUnload = () => {
-      // 브라우저를 완전히 닫을 때 오프라인 처리 시도
-      updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
-    };
-
-    // PC 및 대부분의 안드로이드 닫힘 감지
-    window.addEventListener("beforeunload", handleUnload);
-    // iOS 사파리 및 일부 강제 종료 상황 대응
-    window.addEventListener("unload", handleUnload);
+    // 의도적인 로그아웃(handleLogout) 버튼 클릭 시에만 별도로 오프라인 처리함.
+    // ※ 모바일에서 화면을 벗어나거나 홈버튼을 누를 때 억울하게 강퇴당하는 현상을 막기 위해 beforeunload 등의 이벤트를 전부 삭제!
 
     return () => {
-      // 정상적으로 컴포넌트가 언마운트(로그아웃 등) 될 때
-      updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
-      window.removeEventListener("beforeunload", handleUnload);
-      window.removeEventListener("unload", handleUnload);
+      // 컴포넌트 언마운트 시 자동 오프라인 처리도 주석 처리 (관리자 업데이트로만 퇴장)
+      // updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
     };
   }, [user]);
 
@@ -153,19 +152,7 @@ export default function MusicPlatformApp() {
           }
         }
 
-        // 🚨 5단계: 실시간 1만명 감시를 껐으므로, 무대 정보(특히 pingTime 변경 시점 등)가 바뀔 때 전체 접속자를 단발성(getDocs)으로 가져와서 객석에 채웁니다.
-        try {
-          // TODO: 접속자 수가 너무 많을 경우 where("isOnline", "==", true) 로 인덱싱하여 가져오는 것이 더욱 좋습니다.
-          const q = query(collection(db, "users"));
-          const userSnap = await getDocs(q);
-          const activeUsers = [];
-          userSnap.forEach(d => {
-            if (d.data().isOnline) activeUsers.push(d.data());
-          });
-          setAllUsers(activeUsers);
-        } catch (e) {
-          console.error("접속자 새로고침 실패:", e);
-        }
+        // 🚨 새로고침용 수동 getDocs 삭제 (새 위에 1.1번 코드로 실시간 onSnapshot 감지)
       }
     });
     return () => unsubscribe();
@@ -222,6 +209,7 @@ export default function MusicPlatformApp() {
       id: user?.uid || 0,
       name: user?.name || "나",
       voted: !!myVote,
+      isOnline: true, // 🚨 내 캐릭터는 항상 접속 중이므로 true로 명시!
       choices: myVote ? myVote.choices : { isUnknown: false, isLike: false }
     }];
 
@@ -235,6 +223,7 @@ export default function MusicPlatformApp() {
         id: u.uid,
         name: u.name || '익명',
         voted: !!voteData,
+        isOnline: u.isOnline, // 🚨 AudiencePage 투표율 계산을 위해 isOnline 속성 추가 넘김!
         choices: voteData ? voteData.choices : { isUnknown: false, isLike: false }
       });
     });
