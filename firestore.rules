@@ -1,0 +1,60 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 💡 관리자 여부 확인 함수
+    function isAdmin() {
+      // 접속한 사용자의 UID를 가지고 'users' 컬렉션 문서를 조회하여 isAdmin 필드가 true인지 확인
+      return request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // 💡 로그인 여부 확인 함수
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 1. 유저 정보 (users)
+    match /users/{userId} {
+      // 읽기: 아무나(로그인 무관) 혹은 로그인한 사람만 가능하게 설정 (현재는 로그인한 사람만)
+      allow read: if isAuthenticated();
+      // 쓰기: 본인 데이터만 수정 가능하거나, 관리자만 수정 가능
+      allow write: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+    }
+
+    // 2. 신청곡 큐 등 대기열 (challenges)
+    match /challenges/{challengeId} {
+      // 읽기: 누구나 읽기 가능 (대기열을 봐야 하므로)
+      allow read: if true;
+      // 쓰기: 로그인한 유저라면 누구나 신청(생성) 가능, 수정/삭제는 관리자이거나 본인이 올린 거라면 가능 (ApplicantUid가 있다고 가정)
+      // 보안을 위해 엄격히 하려면 우선 관리자만 쓰기/수정/삭제 가능하게 한 후, 신청 생성만 개방
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // 3. 투표 기록 (votes)
+    match /votes/{voteId} {
+      // 읽기: 로그인한 사람만
+      allow read: if isAuthenticated();
+      // 쓰기: 본인이 투표한 데이터(문서 id에 uid가 포함되거나, 문서 내 uid 필드가 본인과 일치)만 쓰기 허용
+      // 프론트엔드에서 vote를 어떤식으로 doc(Id) 지정하는지에 따라 다름. 여기서는 문서 내 uid 필드를 검증.
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // 4. 무대 정보 (stage) - ex: stage/info, stage/ranking
+    match /stage/{document=**} {
+      // 랭킹이나 무대 상태는 누구나(혹은 로그인 유저) 볼 수 있음
+      allow read: if isAuthenticated();
+      // 무대 상태 변경(카운트다운, 점수 공개 등)은 관리자만!
+      allow write: if isAdmin();
+    }
+
+    // 5. 무대 결과 / 지난 기록 (stage_results)
+    match /stage_results/{resultId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(); // 결산은 관리자(AdminPage) 로직에서 실행하므로 관리자만 쓰기
+    }
+  }
+}

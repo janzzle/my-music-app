@@ -6,6 +6,7 @@ import CountdownOverlay from '../components/common/CountdownOverlay';
 import AudienceGrid from '../components/common/AudienceGrid';
 import RankingBoard from '../components/common/RankingBoard';
 import StageStatusPanel from '../components/common/StageStatusPanel';
+import SkeletonUI from '../components/common/SkeletonUI'; // 🚨 스켈레톤 컴포넌트 추가
 
 // 👇 [추가] Firebase 연동을 위한 함수 가져오기
 import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch } from 'firebase/firestore';
@@ -14,6 +15,18 @@ import { db } from '../firebase';
 const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin, leaderboard = [], liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [] }) => {
   const [showVoteModal, setShowVoteModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  // 🚨 [추가] 로딩 상태 관리
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 데이터가 성공적으로 들어왔다면 로딩 상태 해제
+  React.useEffect(() => {
+    if (audienceList && audienceList.length > 0) {
+      // 깜빡임 방지를 위해 약간의 시간 차 설정 (0.3초)
+      const timer = setTimeout(() => setIsLoading(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [audienceList, stageInfo]);
 
   const [adminArtist, setAdminArtist] = useState('');
   const [adminSong, setAdminSong] = useState('');
@@ -34,20 +47,20 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
   const [adminScoreMode, setAdminScoreMode] = useState(stageInfo?.scoreMode || 'realtime');
 
   const handleApplyChallengeId = async () => {
-    if(!adminChallengeId) return alert("고유값을 입력해주세요.");
+    if (!adminChallengeId) return alert("고유값을 입력해주세요.");
     try {
       // 🚨 공백을 제거(.trim)하여 정확한 고유값을 인식하도록 수정
       const snap = await getDoc(doc(db, "challenges", adminChallengeId.trim()));
-      if(snap.exists()){
-         const data = snap.data();
-         setAdminArtist(data.artist);
-         setAdminSong(data.song);
-         setAdminChallengerName(data.applicantName || '익명 도전자');
-         setIsApplied(true); // 🚨 적용 상태 활성화 (관리자 페이지처럼 락 걸림)
+      if (snap.exists()) {
+        const data = snap.data();
+        setAdminArtist(data.artist);
+        setAdminSong(data.song);
+        setAdminChallengerName(data.applicantName || '익명 도전자');
+        setIsApplied(true); // 🚨 적용 상태 활성화 (관리자 페이지처럼 락 걸림)
       } else { alert("해당 고유값을 찾을 수 없습니다."); }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
   };
-  
+
   const updateStage = async (newStatus, artist = adminArtist, song = adminSong) => {
     const fullTitle = artist && song ? `${artist} - ${song}` : '';
     const newStageId = newStatus === 'countdown' ? (adminChallengeId || Date.now().toString()) : stageInfo?.stageId;
@@ -56,7 +69,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
 
     if (newStatus === 'countdown') {
       updateData.count = 5; updateData.stageId = newStageId; updateData.titleHidden = true; updateData.scoreMode = adminScoreMode; updateData.scoreHidden = true;
-      if (adminChallengeId) await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'playing' }).catch(()=>{});
+      if (adminChallengeId) await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'playing' }).catch(() => { });
     } else if (newStatus === 'ready') {
       updateData.stageId = ''; updateData.count = null; updateData.titleHidden = false; updateData.scoreHidden = true;
       // 🚨 DB 내부의 기록까지 완벽하게 공백으로 덮어씌움
@@ -91,22 +104,22 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
       const snap = await getDocs(q);
       const exists = snap.docs.some(d => d.data().artist === adminArtist);
       if (exists) {
-         if(!window.confirm("🚨 이미 기록에 존재하는 곡입니다. 그래도 카운트다운을 진행하시겠습니까?")) return;
+        if (!window.confirm("🚨 이미 기록에 존재하는 곡입니다. 그래도 카운트다운을 진행하시겠습니까?")) return;
       }
-      
+
       await updateStage('countdown');
       let currentCount = 5;
       const timer = setInterval(async () => {
-          currentCount -= 1;
-          if (currentCount <= 0) {
-              clearInterval(timer);
-              await setDoc(doc(db, 'stage', 'info'), { status: 'ready_to_play', count: null, titleHidden: true }, { merge: true });
-              setTimeout(async () => {
-                  await setDoc(doc(db, 'stage', 'info'), { status: 'playing', titleHidden: true }, { merge: true });
-              }, 1500);
-          } else {
-              await setDoc(doc(db, 'stage', 'info'), { count: currentCount }, { merge: true });
-          }
+        currentCount -= 1;
+        if (currentCount <= 0) {
+          clearInterval(timer);
+          await setDoc(doc(db, 'stage', 'info'), { status: 'ready_to_play', count: null, titleHidden: true }, { merge: true });
+          setTimeout(async () => {
+            await setDoc(doc(db, 'stage', 'info'), { status: 'playing', titleHidden: true }, { merge: true });
+          }, 1500);
+        } else {
+          await setDoc(doc(db, 'stage', 'info'), { count: currentCount }, { merge: true });
+        }
       }, 1000);
     } catch (err) {
       console.error(err);
@@ -119,7 +132,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
     if (!u?.voted) return acc; // 투표 안 했으면 0점
 
     // 🚨 DB에 choices 데이터가 없는 과거 기록이 섞여있을 때를 대비한 안전장치
-    const { isUnknown = false, isLike = false } = u.choices || {}; 
+    const { isUnknown = false, isLike = false } = u.choices || {};
     let score = 0;
 
     if (isUnknown && isLike) score = 4;      // 둘 다 선택 시 4점
@@ -143,7 +156,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
       await setDoc(doc(db, 'stage', 'info'), { titleHidden: false }, { merge: true });
     }, 1000);
   };
-  
+
 
   // 👇 5. [추가] 공지 전송 & 정비 토글 함수
   const sendNotice = () => {
@@ -162,7 +175,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
   // 내 투표 여부 확인 (audienceList가 비어있어도 에러 안 남)
   const myUser = (audienceList || []).find(u => u?.id === 0);
   const hasVoted = myUser ? myUser.voted : false;
-  
+
   // 👇 [추가] 블라인드 모드 여부 확인 (하얀 화면 에러 방지용)
   const isBlindActive = stageInfo?.scoreMode === 'blind' && stageInfo?.scoreHidden;
 
@@ -211,6 +224,15 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
       alert("객석 업데이트 중 오류가 발생했습니다.");
     }
   };
+  // 🚨 [추가] 데이터 로딩 전이라면 스켈레톤 UI 노출
+  if (isLoading) {
+    return (
+      <div className="relative w-full min-h-screen md:h-screen bg-gray-900 flex flex-col items-center overflow-x-hidden pt-16 md:pt-20">
+        <SkeletonUI />
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full min-h-screen md:h-screen bg-gray-900 flex flex-col items-center overflow-x-hidden overflow-y-auto md:overflow-hidden pt-16 md:pt-20 pb-24 md:pb-0 gap-6 md:gap-0">
 
@@ -290,13 +312,13 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
 
       {/* 3. 객석 (공통 컴포넌트로 대체됨) */}
       <div className="w-full flex items-start justify-center pt-4 md:pt-20 relative z-10 shrink-0 md:flex-1">
-        <AudienceGrid 
-          audienceList={audienceList} 
-          stageInfo={stageInfo} 
-          isBlindActive={isBlindActive} 
-          dailyTopUsers={dailyTopUsers} 
-          monthlyTopUsers={monthlyTopUsers} 
-          currentUser={user} 
+        <AudienceGrid
+          audienceList={audienceList}
+          stageInfo={stageInfo}
+          isBlindActive={isBlindActive}
+          dailyTopUsers={dailyTopUsers}
+          monthlyTopUsers={monthlyTopUsers}
+          currentUser={user}
         />
       </div>
 
@@ -307,11 +329,11 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
         <div className="hidden md:block w-80 shrink-0"></div>
 
         {/* 중앙: 하단 투표 버튼 및 상태 (공통 컴포넌트로 대체됨) */}
-        <StageStatusPanel 
-          stageInfo={stageInfo} 
-          isBroadcast={false} 
-          hasVoted={hasVoted} 
-          onVoteClick={() => setShowVoteModal(true)} 
+        <StageStatusPanel
+          stageInfo={stageInfo}
+          isBroadcast={false}
+          hasVoted={hasVoted}
+          onVoteClick={() => setShowVoteModal(true)}
         />
 
         {/* 우측: 순위표 (공통 컴포넌트로 대체됨) */}
@@ -335,13 +357,13 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
                 ) : (
                   <div className="flex flex-col gap-2 mb-4 w-full">
                     <div className="flex gap-2 w-full">
-                        <input value={adminArtist} onChange={(e) => setAdminArtist(e.target.value)} className="w-1/2 min-w-0 p-2 bg-gray-800 border border-gray-600 rounded text-sm text-white font-bold outline-none" placeholder="가수명" />
-                        <input value={adminSong} onChange={(e) => setAdminSong(e.target.value)} className="w-1/2 min-w-0 p-2 bg-gray-800 border border-gray-600 rounded text-sm text-white font-bold outline-none" placeholder="곡 제목" />
+                      <input value={adminArtist} onChange={(e) => setAdminArtist(e.target.value)} className="w-1/2 min-w-0 p-2 bg-gray-800 border border-gray-600 rounded text-sm text-white font-bold outline-none" placeholder="가수명" />
+                      <input value={adminSong} onChange={(e) => setAdminSong(e.target.value)} className="w-1/2 min-w-0 p-2 bg-gray-800 border border-gray-600 rounded text-sm text-white font-bold outline-none" placeholder="곡 제목" />
                     </div>
                     <div className="flex gap-2 w-full items-stretch">
-                        <input value={adminChallengerName} onChange={(e) => setAdminChallengerName(e.target.value)} className="w-1/3 min-w-0 p-2 bg-gray-800 border border-indigo-600 rounded text-sm text-indigo-300 font-bold outline-none" placeholder="신청자" />
-                        <input value={adminChallengeId} onChange={(e) => setAdminChallengeId(e.target.value)} className="flex-1 min-w-0 p-2 bg-gray-900 border border-gray-700 rounded text-sm text-gray-500 outline-none" placeholder="고유값" />
-                        <button onClick={handleApplyChallengeId} className="w-12 shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold transition-colors flex items-center justify-center">적용</button>
+                      <input value={adminChallengerName} onChange={(e) => setAdminChallengerName(e.target.value)} className="w-1/3 min-w-0 p-2 bg-gray-800 border border-indigo-600 rounded text-sm text-indigo-300 font-bold outline-none" placeholder="신청자" />
+                      <input value={adminChallengeId} onChange={(e) => setAdminChallengeId(e.target.value)} className="flex-1 min-w-0 p-2 bg-gray-900 border border-gray-700 rounded text-sm text-gray-500 outline-none" placeholder="고유값" />
+                      <button onClick={handleApplyChallengeId} className="w-12 shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold transition-colors flex items-center justify-center">적용</button>
                     </div>
                   </div>
                 )
@@ -372,20 +394,20 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
                 <button onClick={revealScore} disabled={adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg transition-all ${adminScoreMode === 'realtime' || !stageInfo?.scoreHidden || isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500 animate-bounce'}`}>
                   {isReady ? "🚫 대기 중" : !stageInfo?.scoreHidden && adminScoreMode === 'blind' ? "✅ 점수 공개됨" : "🎉 점수 발표"}
                 </button>
-                <button onClick={async () => { if(!adminChallengeId) return alert("적용된 신청곡이 없습니다."); if(!window.confirm("이 무대를 완료 처리하시겠습니까? (통계에 즉시 반영됩니다)")) return; try { await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'completed' }); alert("무대 완료 처리가 되었습니다."); } catch(e) { console.error(e); alert("오류가 발생했습니다."); } }} disabled={isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 animate-pulse'}`}>
+                <button onClick={async () => { if (!adminChallengeId) return alert("적용된 신청곡이 없습니다."); if (!window.confirm("이 무대를 완료 처리하시겠습니까? (통계에 즉시 반영됩니다)")) return; try { await updateDoc(doc(db, "challenges", adminChallengeId), { status: 'completed' }); alert("무대 완료 처리가 되었습니다."); } catch (e) { console.error(e); alert("오류가 발생했습니다."); } }} disabled={isReady} className={`p-3 rounded-lg text-white font-bold text-sm shadow-lg col-span-2 transition-all ${isReady ? 'bg-gray-800 text-gray-600 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 animate-pulse'}`}>
                   🏁 무대 완료 처리 (통계 반영)
                 </button>
                 <div className="flex gap-1 col-span-2 mt-2">
                   <button onClick={() => toggleMaintenance(true)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${stageInfo?.maintenance ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔒 정비 모드 ON</button>
                   <button onClick={() => toggleMaintenance(false)} className={`flex-1 py-3 rounded-lg text-xs font-bold shadow-lg ${!stageInfo?.maintenance ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>🔓 정비 OFF</button>
                 </div>
-                
+
                 <div className="col-span-2 flex gap-2 mt-2">
                   <button onClick={handleUpdateRanking} className="flex-1 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-lg text-white font-bold text-[11px] shadow-lg">
-                      🏆 순위 업데이트
+                    🏆 순위 업데이트
                   </button>
                   <button onClick={handleRefreshAudience} className="flex-1 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-lg text-white font-bold text-[11px] shadow-lg">
-                      🔄 객석 업데이트
+                    🔄 객석 업데이트
                   </button>
                 </div>
 

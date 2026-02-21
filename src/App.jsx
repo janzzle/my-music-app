@@ -22,9 +22,9 @@ export default function MusicPlatformApp() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [voteStatus, setVoteStatus] = useState({ isUnknown: false, isLike: false });
-  
+
   const [stageInfo, setStageInfo] = useState({ status: 'ready', songTitle: '', stageId: '' });
-  
+
   const [allVotes, setAllVotes] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [liveLeaderboard, setLiveLeaderboard] = useState([]); // 🚨 백그라운드 집계용
@@ -48,25 +48,25 @@ export default function MusicPlatformApp() {
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         // 🚨 테스트 계정도 인식할 수 있도록 무조건 '닉네임' 기준으로 합산
-            const name = data.challengerName;
-            if (!name || name === '익명 도전자') return;
+        const name = data.challengerName;
+        if (!name || name === '익명 도전자') return;
 
-            const d = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
+        const d = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
 
-            // 일간 합산
-            if (d.toDateString() === todayStr) {
-              if (!dailyScores[name]) dailyScores[name] = 0;
-              dailyScores[name] += data.points || 0;
-            }
-            // 월간 합산
-            if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
-              if (!monthlyScores[name]) monthlyScores[name] = 0;
-              monthlyScores[name] += data.points || 0;
-            }
-          });
+        // 일간 합산
+        if (d.toDateString() === todayStr) {
+          if (!dailyScores[name]) dailyScores[name] = 0;
+          dailyScores[name] += data.points || 0;
+        }
+        // 월간 합산
+        if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+          if (!monthlyScores[name]) monthlyScores[name] = 0;
+          monthlyScores[name] += data.points || 0;
+        }
+      });
 
-          setDailyTopUsers(Object.entries(dailyScores).map(([name, pts]) => ({ name, pts })).sort((a,b) => b.pts - a.pts).slice(0,3));
-          setMonthlyTopUsers(Object.entries(monthlyScores).map(([name, pts]) => ({ name, pts })).sort((a,b) => b.pts - a.pts).slice(0,3));
+      setDailyTopUsers(Object.entries(dailyScores).map(([name, pts]) => ({ name, pts })).sort((a, b) => b.pts - a.pts).slice(0, 3));
+      setMonthlyTopUsers(Object.entries(monthlyScores).map(([name, pts]) => ({ name, pts })).sort((a, b) => b.pts - a.pts).slice(0, 3));
     });
     return () => unsub();
   }, []);
@@ -80,7 +80,7 @@ export default function MusicPlatformApp() {
     });
     return () => unsub();
   }, []);
-    // 🚨 수동 업데이트된 '현재 순위'를 DB에서 가져와 화면에 표시
+  // 🚨 수동 업데이트된 '현재 순위'를 DB에서 가져와 화면에 표시
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "stage", "ranking"), (docSnap) => {
       if (docSnap.exists()) setLeaderboard(docSnap.data().list || []);
@@ -116,7 +116,7 @@ export default function MusicPlatformApp() {
   useEffect(() => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
-    
+
     // 접속 즉시 온라인 처리
     updateDoc(userRef, { isOnline: true }).catch(e => console.log(e));
 
@@ -124,7 +124,7 @@ export default function MusicPlatformApp() {
       // 브라우저를 완전히 닫을 때 오프라인 처리 시도
       updateDoc(userRef, { isOnline: false }).catch(e => console.log(e));
     };
-    
+
     // PC 및 대부분의 안드로이드 닫힘 감지
     window.addEventListener("beforeunload", handleUnload);
     // iOS 사파리 및 일부 강제 종료 상황 대응
@@ -152,9 +152,9 @@ export default function MusicPlatformApp() {
           if (localLastPing !== data.pingTime.toString()) {
             sessionStorage.setItem('lastPing', data.pingTime.toString()); // 응답 기억
             // 서버에 "저 살아있어요!" 라고 응답
-            updateDoc(doc(db, "users", user.uid), { 
-              isOnline: true, 
-              lastPong: data.pingTime 
+            updateDoc(doc(db, "users", user.uid), {
+              isOnline: true,
+              lastPong: data.pingTime
             }).catch(e => console.error("Pong 에러:", e));
           }
         }
@@ -163,45 +163,7 @@ export default function MusicPlatformApp() {
     return () => unsubscribe();
   }, [user]);
 
-  useEffect(() => {
-    const q = query(collection(db, "votes"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const scores = {};
-      const todayStr = new Date().toDateString(); 
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        
-        // 1. 오늘 투표한 기록만 취합 (과거 기록 제외)
-        if (data.timestamp && data.timestamp.toDate) {
-          if (data.timestamp.toDate().toDateString() !== todayStr) return;
-        }
-
-        const key = data.stageId;
-        if (!key) return;
-
-        // 2. 점수 합산 준비
-        if (!scores[key]) {
-          scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', challengerName: data.challengerName || '익명 도전자', points: 0 };
-        }
-
-        // 3. 점수 계산 공식 (둘 다=4점, 하나만=1점) - 🚨 에러 방어 적용
-        let pts = 0;
-        if (data.choices?.isUnknown && data.choices?.isLike) pts = 4;
-        else if (data.choices?.isUnknown || data.choices?.isLike) pts = 1;
-
-        scores[key].points += pts; // 점수 누적
-      });
-
-      // 4. 점수 내림차순 정렬 후 Top 3만 뽑아내기
-      const sorted = Object.values(scores).sort((a, b) => b.points - a.points).slice(0, 3);
-      setLiveLeaderboard(sorted);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // 3. 오늘 투표된 전체 기록 가져오기 (실시간 감지)
+  /* 기존 중복되었던 실시간 랭킹(liveLeaderboard) 전용 useEffect 삭제 및 병합 */
   useEffect(() => {
     const q = query(collection(db, "votes"));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -218,32 +180,34 @@ export default function MusicPlatformApp() {
     return () => unsub();
   }, []);
 
-  // 4. 실시간 랭킹 집계 (블라인드 점수 유출 방지 적용)
+  // 4. 실시간 랭킹 집계 (allVotes 값에 의존하도록 통합, 블라인드 점수 유출 방지 적용)
   useEffect(() => {
     const scores = {};
     allVotes.forEach(data => {
       const key = data.stageId;
       if (!key) return;
-      
+
       // 블라인드 모드 & 점수 비공개 상태인 '현재 무대'는 랭킹 계산에서 임시 제외!
-      if (key === stageInfo.stageId && stageInfo.scoreMode === 'blind' && stageInfo.scoreHidden) return; 
+      if (key === stageInfo.stageId && stageInfo.scoreMode === 'blind' && stageInfo.scoreHidden) return;
 
       if (!scores[key]) scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', challengerName: data.challengerName || '익명 도전자', points: 0 };
-      
+
       // 🚨 에러 방어 적용
       let pts = 0;
       if (data.choices?.isUnknown && data.choices?.isLike) pts = 4;
       else if (data.choices?.isUnknown || data.choices?.isLike) pts = 1;
       scores[key].points += pts;
     });
+
+    // 🚨 [최적화] 이전 랭킹과 다를 때만 업데이트 
     const sorted = Object.values(scores).sort((a, b) => b.points - a.points).slice(0, 3);
-    setLiveLeaderboard(sorted);
+    setLiveLeaderboard(prev => JSON.stringify(prev) === JSON.stringify(sorted) ? prev : sorted);
   }, [allVotes, stageInfo]);
 
   // 5. 실시간 형광등(객석) 연동 (전체 가입자 기반)
   useEffect(() => {
     const currentVotes = allVotes.filter(v => v.stageId === stageInfo.stageId);
-    
+
     // 1. 내 캐릭터를 1번 자리에 무조건 고정
     const myVote = currentVotes.find(v => v.uid === user?.uid);
     const newAudience = [{
@@ -257,7 +221,7 @@ export default function MusicPlatformApp() {
     allUsers.forEach(u => {
       if (user && u.uid === user.uid) return; // '나'는 1번에 앉았으니 패스
       if (!u.isOnline) return; // 오프라인 유저는 객석에서 제외!
-      
+
       const voteData = currentVotes.find(v => v.uid === u.uid);
       newAudience.push({
         id: u.uid,
@@ -289,17 +253,17 @@ export default function MusicPlatformApp() {
     <div className="font-sans text-gray-900 bg-gray-50 min-h-screen relative pb-16">
       <GlobalStatusLayer socket={socket} currentPage={currentPage} />
       <Navigation
-        isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} 
-        user={user} handleLogout={handleLogout} 
-        setIsSignupMode={setIsSignupMode} navigateTo={navigateTo} 
-        isAdmin={isAdmin} 
-        currentPage={currentPage} 
+        isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen}
+        user={user} handleLogout={handleLogout}
+        setIsSignupMode={setIsSignupMode} navigateTo={navigateTo}
+        isAdmin={isAdmin}
+        currentPage={currentPage}
       />
 
       {currentPage === 'audience' && (
         <AudiencePage audienceList={audienceList} user={user} stageInfo={stageInfo} socket={socket} isAdmin={isAdmin} leaderboard={leaderboard} liveLeaderboard={liveLeaderboard} dailyTopUsers={dailyTopUsers} monthlyTopUsers={monthlyTopUsers} />
       )}
-      
+
       {currentPage === 'broadcast' && isAdmin && (
         <BroadcastPage audienceList={audienceList} stageInfo={stageInfo} socket={socket} leaderboard={leaderboard} dailyTopUsers={dailyTopUsers} monthlyTopUsers={monthlyTopUsers} />
       )}

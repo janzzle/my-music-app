@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, setDoc, onSnapshot, collection, query, updateDoc, deleteDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { Trash2, CheckCircle, Music, Mic2, BarChart, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Edit3, Copy, RefreshCw } from 'lucide-react';
+// 🚨 추가: 직접 만든 입력값 정제 유틸리티
+import { sanitizeInput } from '../utils/sanitize';
 
 const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTopUsers = [], audienceList = [] }) => {
   const [adminArtist, setAdminArtist] = useState('');
@@ -310,18 +312,31 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   };
 
   const handleEditQueue = async (item) => {
-    const newArtist = prompt("가수명을 수정하세요:", item.artist);
-    if (newArtist === null) return;
-    const newSong = prompt("곡 제목을 수정하세요:", item.song);
-    if (newSong === null) return;
-    const newName = prompt("도전자 닉네임을 수정하세요:", item.applicantName);
-    if (newName === null) return;
+    const rawArtist = prompt("가수명을 수정하세요 (최대 100자):", item.artist);
+    if (rawArtist === null) return;
+
+    const rawSong = prompt("곡 제목을 수정하세요 (최대 100자):", item.song);
+    if (rawSong === null) return;
+
+    const rawName = prompt("도전자 닉네임을 수정하세요 (최대 50자):", item.applicantName);
+    if (rawName === null) return;
+
+    // 🚨 여기서 정제(Sanitize) 시작 (태그 치환 및 각각 적절한 글자 수로 제한)
+    const newArtist = sanitizeInput(rawArtist, 100);
+    const newSong = sanitizeInput(rawSong, 100);
+    const newName = sanitizeInput(rawName, 50);
+
+    // 정제된 값이 비어버리면(예: 띄어쓰기만 쳤을 때) 통과 안됨
+    if (!newArtist || !newSong || !newName) {
+      return alert("값이 올바르지 않거나 너무 짧습니다. 다시 시도해주세요.");
+    }
 
     await updateDoc(doc(db, "challenges", item.id), {
       artist: newArtist,
       song: newSong,
       applicantName: newName
     });
+    alert("수정되었습니다.");
   };
 
   const getPlayCount = (artist, song) => {
@@ -358,10 +373,18 @@ const AdminPage = ({ socket, liveLeaderboard = [], dailyTopUsers = [], monthlyTo
   };
 
   const handleEditRecordTitle = async (group) => {
-    const newArtist = window.prompt("새로운 가수명을 입력하세요:", group.artist);
-    if (newArtist === null) return;
-    const newSong = window.prompt("새로운 곡 제목을 입력하세요:", group.song);
-    if (newSong === null) return;
+    const rawArtist = window.prompt("새로운 가수명을 입력하세요:", group.artist);
+    if (rawArtist === null) return;
+    const rawSong = window.prompt("새로운 곡 제목을 입력하세요:", group.song);
+    if (rawSong === null) return;
+
+    // 🚨 동일한 정제 로직 사용
+    const newArtist = sanitizeInput(rawArtist, 100);
+    const newSong = sanitizeInput(rawSong, 100);
+
+    if (!newArtist || !newSong) {
+      return alert("값이 올바르지 않거나 너무 짧습니다. 다시 시도해주세요.");
+    }
 
     await updateDoc(doc(db, "stage_results", group.id), {
       artist: newArtist,

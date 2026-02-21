@@ -31,7 +31,7 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen, user, handleLogout, setIsSignup
         >
           <Zap size={14} className="text-yellow-400 fill-current drop-shadow-md" />
           <div className={`font-black italic text-xs md:text-sm tracking-tighter ${textColor} drop-shadow-md`}>
-            HIDDEN <span className="text-indigo-500">STAGE</span>
+            숨은 <span className="text-indigo-500">명곡대전</span>
           </div>
         </div>
 

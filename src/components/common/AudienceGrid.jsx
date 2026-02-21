@@ -1,7 +1,53 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { User } from 'lucide-react';
 
-const AudienceGrid = ({ audienceList = [], stageInfo = {}, isBlindActive, dailyTopUsers = [], monthlyTopUsers = [], currentUser = null }) => {
+const UserItem = memo(({ u, isMe, showLight, isChallenger, isDailyTop1, isDailyTop2, isDailyTop3, isMonthlyTop, currentMonthNum, monthlyBadgeStyle }) => (
+  <div className="relative group flex flex-col items-center mt-10">
+    {isChallenger && (
+      <div className="absolute inset-0 bg-fuchsia-500/20 blur-xl rounded-full scale-150 animate-pulse z-0"></div>
+    )}
+    <div className="absolute -top-11 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 w-20">
+      <div className={`
+        w-10 h-7 bg-gray-800 rounded-md border-2 border-gray-600 shadow-xl flex gap-0.5 p-0.5 mb-1 transform transition-all duration-500
+        ${showLight ? 'scale-110 opacity-100' : 'scale-90 opacity-0'}
+      `}>
+        <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isUnknown ? 'bg-cyan-400 shadow-[0_0_10px_cyan]' : 'bg-gray-700 opacity-20'}`}></div>
+        <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isLike ? 'bg-pink-500 shadow-[0_0_10px_pink]' : 'bg-gray-700 opacity-20'}`}></div>
+      </div>
+      <div className={`flex justify-between w-7 relative z-10 transition-all duration-500 ${showLight ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-3'}`}>
+        <div className="w-1 h-3.5 bg-gray-300 border border-gray-400 rounded-full transform -rotate-[20deg] origin-bottom"></div>
+        <div className="w-1 h-3.5 bg-gray-300 border border-gray-400 rounded-full transform rotate-[20deg] origin-bottom"></div>
+      </div>
+    </div>
+    <div className={`relative z-20 p-1.5 rounded-full mb-1 border-2 border-gray-700 bg-gray-800 ${isChallenger ? 'ring-2 ring-pink-400/50' : ''} ${isMe ? 'shadow-[0_0_15px_rgba(59,130,246,0.6)]' : ''}`}>
+      <User size={16} className={isMe ? 'text-blue-400' : 'text-gray-400'} />
+    </div>
+    <div className="relative flex items-center z-20 mt-1">
+      {isMonthlyTop && <span className={`absolute -left-4 -top-6 text-[5px] font-black px-1 py-[1px] rounded shadow-sm transform -rotate-[20deg] z-30 border ${monthlyBadgeStyle}`}>{currentMonthNum}월 Top</span>}
+      <span className={`text-[9px] px-2 py-1 rounded-full font-bold tracking-tighter truncate max-w-[50px] border transition-all
+        ${isChallenger ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_10px_#ec4899]' : 
+          isDailyTop1 ? 'bg-gray-900 text-yellow-400 border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.5)]' :
+          isDailyTop2 ? 'bg-gray-900 text-gray-200 border-gray-400/60 shadow-[0_0_8px_rgba(209,213,219,0.5)]' :
+          isDailyTop3 ? 'bg-gray-900 text-orange-300 border-orange-500/60 shadow-[0_0_8px_rgba(249,115,22,0.5)]' :
+          isMe ? 'bg-blue-600 text-white border-blue-400' : 'bg-black/60 text-white border-gray-600/50 backdrop-blur-sm'
+        }
+      `}>
+        {u?.name || '익명'}
+      </span>
+    </div>
+  </div>
+), (prevProps, nextProps) => {
+  return (
+    prevProps.u?.id === nextProps.u?.id &&
+    prevProps.u?.voted === nextProps.u?.voted &&
+    prevProps.u?.choices?.isUnknown === nextProps.u?.choices?.isUnknown &&
+    prevProps.u?.choices?.isLike === nextProps.u?.choices?.isLike &&
+    prevProps.showLight === nextProps.showLight &&
+    prevProps.isChallenger === nextProps.isChallenger
+  );
+});
+
+const AudienceGrid = memo(({ audienceList = [], stageInfo = {}, isBlindActive, dailyTopUsers = [], monthlyTopUsers = [], currentUser = null }) => {
   const count = audienceList?.length || 0;
   let gridClass = "grid-cols-4 md:grid-cols-6 gap-2 md:gap-3";
   let scaleClass = "scale-90 md:scale-110";
@@ -52,59 +98,23 @@ const AudienceGrid = ({ audienceList = [], stageInfo = {}, isBlindActive, dailyT
                 else if (isMonthlyTop3) monthlyBadgeStyle = "bg-gradient-to-r from-orange-400 to-orange-600 border-orange-200 text-white";
 
                 return (
-                  <div key={u?.id || Math.random()} className="relative group flex flex-col items-center mt-10">
-                    
-                    {/* 도전자 아우라 */}
-                    {isChallenger && (
-                      <div className="absolute inset-0 bg-fuchsia-500/20 blur-xl rounded-full scale-150 animate-pulse z-0"></div>
-                    )}
-
-                    {/* 형광등 스케치북 (🚨 수정: 전체 위치 하향 조정 및 크기 축소) */}
-                    <div className="absolute -top-11 left-1/2 -translate-x-1/2 flex flex-col items-center z-10 w-20">
-                      
-                      {/* 🚨 수정: 형광등 크기를 약간 줄임 (w-12 h-8 -> w-10 h-7) */}
-                      <div className={`
-                        w-10 h-7 bg-gray-800 rounded-md border-2 border-gray-600 shadow-xl flex gap-0.5 p-0.5 mb-1 transform transition-all duration-500
-                        ${showLight ? 'scale-110 opacity-100' : 'scale-90 opacity-0'}
-                      `}>
-                        <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isUnknown ? 'bg-cyan-400 shadow-[0_0_10px_cyan]' : 'bg-gray-700 opacity-20'}`}></div>
-                        <div className={`flex-1 rounded-sm transition-all duration-300 ${u?.choices?.isLike ? 'bg-pink-500 shadow-[0_0_10px_pink]' : 'bg-gray-700 opacity-20'}`}></div>
-                      </div>
-
-                      {/* 🚨 수정: 팔 길이를 짧게 줄임 (h-5 -> h-3.5) */}
-                      <div className={`flex justify-between w-7 relative z-10 transition-all duration-500 ${showLight ? 'opacity-90 translate-y-0' : 'opacity-0 translate-y-3'}`}>
-                        <div className="w-1 h-3.5 bg-gray-300 border border-gray-400 rounded-full transform -rotate-[20deg] origin-bottom"></div>
-                        <div className="w-1 h-3.5 bg-gray-300 border border-gray-400 rounded-full transform rotate-[20deg] origin-bottom"></div>
-                      </div>
-                    </div>
-                    
-                    {/* 🚨 아이콘 박스 (테두리 빛 삭제, '나(isMe)'일 때만 아이콘 안쪽에서 파란 빛 은은하게) */}
-                    <div className={`relative z-20 p-1.5 rounded-full mb-1 border-2 border-gray-700 bg-gray-800 ${isChallenger ? 'ring-2 ring-pink-400/50' : ''} ${isMe ? 'shadow-[0_0_15px_rgba(59,130,246,0.6)]' : ''}`}>
-                      <User size={16} className={isMe ? 'text-blue-400' : 'text-gray-400'} />
-                    </div>
-                    
-                    {/* 🚨 이름표 (여기에만 은은한 테두리 빛 적용) */}
-                    <div className="relative flex items-center z-20 mt-1">
-                      {/* [👇 조절 가이드] text-[5px]로 초소형화하고 위치를 아이콘 좌측 상단으로 뺐습니다. -left-3은 왼쪽 위치, -top-1은 위쪽 위치, text-[6px]는 글자 크기, px-1은 가로 여백입니다.*/}
-                      {isMonthlyTop && <span className={`absolute -left-4 -top-6 text-[5px] font-black px-1 py-[1px] rounded shadow-sm transform -rotate-[20deg] z-30 border ${monthlyBadgeStyle}`}>{currentMonthNum}월 Top</span>}
-                      
-                      {/* [👇 조절 가이드] max-w-[50px] 숫자를 늘리면 긴 이름이 덜 잘리지만 겹칠 수 있습니다. */}
-                      <span className={`text-[9px] px-2 py-1 rounded-full font-bold tracking-tighter truncate max-w-[50px] border transition-all
-                        ${isChallenger ? 'bg-pink-600 text-white border-pink-400 shadow-[0_0_10px_#ec4899]' : 
-                          isDailyTop1 ? 'bg-gray-900 text-yellow-400 border-yellow-500/60 shadow-[0_0_8px_rgba(234,179,8,0.5)]' :
-                          isDailyTop2 ? 'bg-gray-900 text-gray-200 border-gray-400/60 shadow-[0_0_8px_rgba(209,213,219,0.5)]' :
-                          isDailyTop3 ? 'bg-gray-900 text-orange-300 border-orange-500/60 shadow-[0_0_8px_rgba(249,115,22,0.5)]' :
-                          isMe ? 'bg-blue-600 text-white border-blue-400' : 'bg-black/60 text-white border-gray-600/50 backdrop-blur-sm'
-                        }
-                      `}>
-                        {u?.name || '익명'}
-                      </span>
-                    </div>
-                  </div>
+                  <UserItem 
+                    key={u?.id || Math.random()} 
+                    u={u} 
+                    isMe={isMe} 
+                    showLight={showLight} 
+                    isChallenger={isChallenger} 
+                    isDailyTop1={isDailyTop1} 
+                    isDailyTop2={isDailyTop2} 
+                    isDailyTop3={isDailyTop3} 
+                    isMonthlyTop={isMonthlyTop} 
+                    currentMonthNum={currentMonthNum} 
+                    monthlyBadgeStyle={monthlyBadgeStyle} 
+                  />
                 );
               })}
     </div>
   );
-};
+});
 
 export default AudienceGrid;
