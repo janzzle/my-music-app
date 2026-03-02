@@ -86,8 +86,8 @@ const GuidePage = ({ navigateTo }) => (
               선곡 신청 시
             </h4>
             <p className="text-gray-700 text-sm">
-              <strong>추천 이유</strong>와 <strong>가수</strong>나 <strong>곡</strong>에 대한 <strong>간략한 소개</strong><br/>
-              <strong> 비하인드 스토리</strong><br/> 그리고... 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
+              <strong>추천 이유</strong>와 <strong>가수</strong>나 <strong>곡</strong>에 대한 <strong>간략한 소개</strong>와<br/>
+              재미있는 <strong>비하인드 스토리</strong><br/> 그리고 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
             </p>
           </div>
         </div>
