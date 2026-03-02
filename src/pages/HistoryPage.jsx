@@ -97,7 +97,7 @@ const HistoryPage = () => {
           <div className="flex flex-col gap-1 shrink-0">
             <h2 className="text-xl md:text-2xl font-black text-gray-900 flex items-center gap-1.5">
               <Trophy className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" fill="currentColor" />
-              오늘의 순위
+              누적 순위
             </h2>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse">LIVE</div>
@@ -164,14 +164,14 @@ const HistoryPage = () => {
                         <Music className={`w-5 h-5 md:w-6 md:h-6 ${index === 0 ? 'text-white/50' : 'text-gray-400'}`} />
                       </div>
 
-                      {/* 윗줄: 가수 - 곡명 / 아랫줄: 도전자 닉네임 */}
+                      {/* 윗줄: 가수 - 곡명 / 아랫줄: 신청자 닉네임 */}
                       <div className="flex flex-col min-w-0">
                         <div className={`font-bold text-base md:text-lg truncate leading-tight ${index === 0 ? 'text-white' : 'text-gray-800'}`}>
                           {item.artist || '알 수 없음'} - {item.song || item.songTitle}
                         </div>
                         <div className={`text-xs md:text-sm truncate flex items-center gap-1 mt-0.5 ${index === 0 ? 'text-gray-400' : 'text-gray-500'}`}>
                           <User className="w-3 h-3 md:w-4 md:h-4" />
-                          <span className="font-medium">도전자: {item.challengerName || '익명 도전자'}</span>
+                          <span className="font-medium">신청자: {item.challengerName || '익명 신청자'}</span>
                         </div>
                       </div>
                     </div>

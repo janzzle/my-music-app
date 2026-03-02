@@ -22,7 +22,7 @@ const RankingBoard = ({ leaderboard = [] }) => {
                     {item.songTitle}
                   </span>
                   <span className="text-gray-400 text-[10px] md:text-xs truncate mt-0.5">
-                    도전자: {item.challengerName || '익명'}
+                    신청자: {item.challengerName || '익명'}
                   </span>
                 </div>
               </div>

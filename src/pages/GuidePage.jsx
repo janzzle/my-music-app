@@ -18,7 +18,7 @@ const GuidePage = ({ navigateTo }) => (
         </span>
       </h1>
       <p className="text-gray-600 text-lg leading-relaxed break-keep">
-        <strong>새로운 음악</strong>을 알아가는 재미.<br/>
+        <strong>새로운 음악</strong>을 알아가는 재미<br/>
         나만 아는 <strong>숨은 명가수</strong>와 <strong>노래</strong>를 발굴하고 함께 듣는<br/>
         <strong>음악 큐레이션 게임</strong>입니다.
       </p>
@@ -71,14 +71,13 @@ const GuidePage = ({ navigateTo }) => (
         <div>
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Music2 size={24} className="text-pink-500" />
-            관객의 마음을 움직이는 음악을 들려주세요
+            <strong>감탄 나오는 선곡</strong>에 자신 있으신가요?<br/>
           </h3>
           
           <p className="text-gray-600 text-base mb-6 leading-relaxed">
-            <strong>감탄 나오는 선곡</strong>이 자신 있으신가요?<br/>
             동네에서 <strong>주크박스</strong> 소리 좀 듣는다면<br/>
-            <strong>나만의 음악 취향</strong>을 인정 받고 싶다면<br/>
-            지금 바로 신청해보세요!
+            나만의 <strong>음악 취향</strong>을 인정 받고 싶다면<br/>
+            지금 바로 신청하세요!
           </p>
 
           <div className="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-r-xl mb-6">
@@ -87,8 +86,8 @@ const GuidePage = ({ navigateTo }) => (
               선곡 신청 시
             </h4>
             <p className="text-gray-700 text-sm">
-              <strong>추천 이유</strong>와 <strong>가수</strong>에 대한 간략한 소개나 재밌는<strong> 비하인드 스토리</strong><br/>
-               그리고 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
+              <strong>추천 이유</strong>와 <strong>가수</strong>나 <strong>곡</strong>에 대한 <strong>간략한 소개</strong>,<br/>
+               재밌는<strong> 비하인드 스토리</strong>그리고 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
             </p>
           </div>
         </div>
