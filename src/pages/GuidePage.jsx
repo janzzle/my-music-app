@@ -9,7 +9,7 @@ const GuidePage = ({ navigateTo }) => (
     <section className="mb-10 text-center animate-fade-in-down">
       <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-4 py-1.5 rounded-full font-bold text-sm mb-4">
         <Radio size={16} className="animate-pulse" />
-        <span>ON AIR : HIDDEN STAGE</span>
+        <span>ON AIR : 숨은명곡대전</span>
       </div>
       <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-4 leading-tight">
         세상이 놓친 목소리,<br />

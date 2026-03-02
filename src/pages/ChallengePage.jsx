@@ -297,9 +297,8 @@ const ChallengePage = () => {
             <textarea
               value={message} // 👈 연결
               onChange={(e) => setMessage(e.target.value)} // 👈 연결
-              className="w-full p-4 h-40 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-200 outline-none resize-none transition-all leading-relaxed"
-              placeholder="이 곡을 추천하는 이유, 간략한 가수와 곡소개,<br/> 관련된 에피소드 그리고 곡에 얽힌 나의 이야기를 적어주세요!<br/> 
-              <br/>꼭 남들이 모르는 노래가 아니라도 좋아요.<br/>모두가 즐길 수 있다면 환영합니다!"
+              className="w-full p-4 h-48 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-200 outline-none resize-none transition-all leading-relaxed"
+              placeholder={"이 곡을 추천하는 이유, 간략한 가수와 곡소개,\n 관련된 에피소드 그리고 곡에 얽힌 나의 이야기를 적어주세요!\n \n꼭 남들이 모르는 노래가 아니라도 좋아요.\n모두가 즐길 수 있다면 환영합니다!"}
             ></textarea>
           </div>
 
