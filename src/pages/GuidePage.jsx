@@ -18,9 +18,9 @@ const GuidePage = ({ navigateTo }) => (
         </span>
       </h1>
       <p className="text-gray-600 text-lg leading-relaxed break-keep">
-        숫자보다 <strong>음악의 본질</strong>에 집중합니다.<br/>
-        나만 아는 <strong>숨은 명가수</strong>와 <strong>명곡</strong>을 발굴하는<br/>
-        <strong>음악 큐레이션 서바이벌</strong>입니다.
+        <strong>새로운 음악</strong>을 알아가는 재미.<br/>
+        나만 아는 <strong>숨은 명가수</strong>와 <strong>노래</strong>를 발굴하고 함께 듣는<br/>
+        <strong>음악 큐레이션 게임</strong>입니다.
       </p>
     </section>
 
@@ -34,7 +34,7 @@ const GuidePage = ({ navigateTo }) => (
         
         <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
           <span className="bg-yellow-400 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">pts</span>
-          점수 산정의 비밀
+          점수 계산 방식
         </h3>
         
         <div className="space-y-3">
@@ -51,7 +51,7 @@ const GuidePage = ({ navigateTo }) => (
           {/* 4점 하이라이트 */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 rounded-xl text-white shadow-lg mt-2">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-yellow-300 text-xs tracking-widest">JACKPOT BONUS</span>
+              <span className="font-bold text-yellow-300 text-xs tracking-widest">보너스 점수</span>
               <Star size={18} className="fill-yellow-400 text-yellow-400 animate-spin-slow" />
             </div>
             <div className="flex items-center justify-between">
@@ -66,26 +66,29 @@ const GuidePage = ({ navigateTo }) => (
         </div>
       </div>
 
-      {/* 3. 도전 신청 가이드 (오른쪽 배치) */}
+      {/* 3. 선곡 신청 가이드 (오른쪽 배치) */}
       <div className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 flex flex-col justify-between">
         <div>
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Music2 size={24} className="text-pink-500" />
-            취향을 증명하세요
+            관객의 마음을 움직이는 음악을 들려주세요
           </h3>
           
           <p className="text-gray-600 text-base mb-6 leading-relaxed">
-            나만 알기 아까운 <strong>실력파 가수</strong>가 있나요?<br/>
-            당신의 추천이 <strong>역주행의 신화</strong>가 됩니다.
+            <strong>감탄 나오는 선곡</strong>이 자신 있으신가요?<br/>
+            동네에서 <strong>주크박스</strong> 소리 좀 듣는다면<br/>
+            <strong>나만의 음악 취향</strong>을 인정 받고 싶다면<br/>
+            지금 바로 신청해보세요!
           </p>
 
           <div className="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-r-xl mb-6">
             <h4 className="font-bold text-pink-700 text-sm mb-2 flex items-center gap-2">
               <PenTool size={16} />
-              선정 확률 높이는 Tip
+              선곡 신청 시
             </h4>
             <p className="text-gray-700 text-sm">
-              단순 신청보다 <strong>가수와의 사연</strong>이나 <strong>에피소드</strong>를 적어주세요. 스토리는 힘이 셉니다.
+              <strong>추천 이유</strong>와 <strong>가수</strong>에 대한 간략한 소개나 재밌는<strong> 비하인드 스토리</strong><br/>
+               그리고 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
             </p>
           </div>
         </div>
@@ -95,7 +98,7 @@ const GuidePage = ({ navigateTo }) => (
           onClick={() => navigateTo('challenge')}
           className="w-full bg-black text-white py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg active:scale-95"
         >
-          <span>내 인생곡 도전 신청하러 가기</span>
+          <span>내 인생곡 신청하러 가기</span>
           <ArrowRight size={20} />
         </button>
       </div>

@@ -185,7 +185,7 @@ const ChallengePage = () => {
   return (
     <div className="w-full px-4 md:px-6 max-w-2xl mx-auto min-h-screen overflow-y-auto pt-20 pb-32">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-black mb-2 text-gray-900">✨ 도전 신청</h2>
+        <h2 className="text-3xl font-black mb-2 text-gray-900">✨ 선곡 신청</h2>
         <p className="text-gray-500 text-sm mb-4">당신의 숨은 인생곡을 세상에 소개해주세요.</p>
 
         {/* 👇 [추가] 통계 보기 버튼 */}
@@ -208,7 +208,7 @@ const ChallengePage = () => {
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
             <span className="text-3xl">🎫</span>
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">도전 신청 기회를 모두 사용했습니다!</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">선곡 신청 기회를 모두 사용했습니다!</h2>
           <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
             매일 1회의 신청 기회가 제공됩니다.<br />
             추가 신청을 원하시면 관리자에게 요청하세요.
@@ -298,7 +298,11 @@ const ChallengePage = () => {
               value={message} // 👈 연결
               onChange={(e) => setMessage(e.target.value)} // 👈 연결
               className="w-full p-4 h-40 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-200 outline-none resize-none transition-all leading-relaxed"
-              placeholder="이 노래를 추천하는 이유, 가수와의 에피소드, 곡에 얽힌 나만의 추억 등을 자유롭게 적어주세요. (구체적일수록 선정 확률 UP!)"
+              placeholder="이 노래를 추천하는 이유, 가수에 대한 간략한 소개, 
+              가수나 곡과 관련된 에피소드, 곡에 얽힌 나의 이야기를 적어주세요!
+              
+              꼭 남들이 모르는 노래가 아니라도 좋아요.
+              모두가 즐길 수 있는 노래라면 환영합니다!"
             ></textarea>
           </div>
 
@@ -311,7 +315,7 @@ const ChallengePage = () => {
               ${isSubmitting ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}
             `}
           >
-            {isSubmitting ? '전송 중...' : '도전 신청하기'}
+            {isSubmitting ? '전송 중...' : '선곡 신청하기'}
           </button>
         </form>
       )}

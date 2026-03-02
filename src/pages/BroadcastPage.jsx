@@ -52,7 +52,7 @@ const BroadcastPage = ({ audienceList = [], stageInfo = {}, socket, leaderboard 
               <span className="text-6xl md:text-8xl text-red-500 inline-block">{stageInfo.count}</span>
             )}
             {stageInfo.status === 'ready_to_play' && <span className="opacity-0">.</span>}
-            {stageInfo.status === 'playing' && stageInfo.titleHidden === true && <span className="text-white text-3xl md:text-5xl animate-custom-fade-in inline-block drop-shadow-lg">🎵 도전 곡 재생 중...</span>}
+            {stageInfo.status === 'playing' && stageInfo.titleHidden === true && <span className="text-white text-3xl md:text-5xl animate-custom-fade-in inline-block drop-shadow-lg">🎵신청 곡 재생 중...</span>}
             {(stageInfo.status === 'playing' || stageInfo.status === 'voting' || stageInfo.status === 'ended') && stageInfo.titleHidden === false && (
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 animate-custom-fade-in inline-block">
                 {stageInfo.songTitle || "다음 곡 대기 중"}

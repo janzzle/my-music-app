@@ -51,7 +51,7 @@ const VoteModal = ({ onClose, stageInfo }) => {
         return;
       }
 
-      // ✅ [수정 2] 투표 데이터 저장 시 stageId 포함 (도전자 정보 추가)
+      // ✅ [수정 2] 투표 데이터 저장 시 stageId 포함 (신청자 정보 추가)
       await addDoc(collection(db, "votes"), {
         uid: auth.currentUser.uid,
         name: auth.currentUser.displayName,
@@ -61,8 +61,8 @@ const VoteModal = ({ onClose, stageInfo }) => {
         song: stageInfo.song || '',     // 곡 정보 저장
 
         stageId: stageInfo.stageId,
-        challengerName: stageInfo.challengerName || '익명 도전자', // 👈 [추가] 도전자 닉네임
-        challengerUid: stageInfo.challengerUid || '',           // 👈 [추가] 도전자 고유값(ID)
+        challengerName: stageInfo.challengerName || '익명 신청자', // 👈 [추가] 신청자 닉네임
+        challengerUid: stageInfo.challengerUid || '',           // 👈 [추가] 신청자 고유값(ID)
 
         points: points,
 

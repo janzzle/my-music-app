@@ -49,7 +49,7 @@ export default function MusicPlatformApp() {
         const data = docSnap.data();
         // 🚨 테스트 계정도 인식할 수 있도록 무조건 '닉네임' 기준으로 합산
         const name = data.challengerName;
-        if (!name || name === '익명 도전자') return;
+        if (!name || name === '익명 신청자') return;
 
         const d = data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp);
 
@@ -185,7 +185,7 @@ export default function MusicPlatformApp() {
       // 블라인드 모드 & 점수 비공개 상태인 '현재 무대'는 랭킹 계산에서 임시 제외!
       if (key === stageInfo.stageId && stageInfo.scoreMode === 'blind' && stageInfo.scoreHidden) return;
 
-      if (!scores[key]) scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', challengerName: data.challengerName || '익명 도전자', points: 0 };
+      if (!scores[key]) scores[key] = { stageId: key, songTitle: data.songTitle || '알 수 없는 곡', challengerName: data.challengerName || '익명 신청자', points: 0 };
 
       // 🚨 에러 방어 적용
       let pts = 0;

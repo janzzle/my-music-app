@@ -55,7 +55,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
         const data = snap.data();
         setAdminArtist(data.artist);
         setAdminSong(data.song);
-        setAdminChallengerName(data.applicantName || '익명 도전자');
+        setAdminChallengerName(data.applicantName || '익명 신청자');
         setIsApplied(true); // 🚨 적용 상태 활성화 (관리자 페이지처럼 락 걸림)
       } else { alert("해당 고유값을 찾을 수 없습니다."); }
     } catch (e) { console.error(e); }
@@ -65,7 +65,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
     const fullTitle = artist && song ? `${artist} - ${song}` : '';
     const newStageId = newStatus === 'countdown' ? (adminChallengeId || Date.now().toString()) : stageInfo?.stageId;
 
-    const updateData = { status: newStatus, songTitle: fullTitle, artist: artist, song: song, challengerName: adminChallengerName || '익명 도전자', challengerUid: adminChallengeId, updatedAt: new Date() };
+    const updateData = { status: newStatus, songTitle: fullTitle, artist: artist, song: song, challengerName: adminChallengerName || '익명 신청자', challengerUid: adminChallengeId, updatedAt: new Date() };
 
     if (newStatus === 'countdown') {
       updateData.count = 5; updateData.stageId = newStageId; updateData.titleHidden = true; updateData.scoreMode = adminScoreMode; updateData.scoreHidden = true;
@@ -88,7 +88,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
             totalPoints += pts;
           });
           await setDoc(doc(db, "stage_results", stageInfo.stageId), {
-            stageId: stageInfo.stageId, songTitle: stageInfo.songTitle, artist: stageInfo.artist, song: stageInfo.song, challengerName: stageInfo.challengerName || '익명 도전자', challengerUid: stageInfo.challengerUid || '', points: totalPoints, voteCount: voteCount, timestamp: new Date()
+            stageId: stageInfo.stageId, songTitle: stageInfo.songTitle, artist: stageInfo.artist, song: stageInfo.song, challengerName: stageInfo.challengerName || '익명 신청자', challengerUid: stageInfo.challengerUid || '', points: totalPoints, voteCount: voteCount, timestamp: new Date()
           });
         } catch (error) { console.error(error); }
       }
@@ -284,7 +284,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
             {/* 3. 재생 중 + 제목 숨김 (흐린 곳에서 밝아지며 등장) */}
             {stageInfo.status === 'playing' && stageInfo.titleHidden === true && (
               <span className="text-white text-3xl md:text-5xl animate-custom-fade-in inline-block drop-shadow-lg">
-                🎵 도전 곡 재생 중...
+                🎵 신청 곡 재생 중...
               </span>
             )}
 
@@ -382,7 +382,7 @@ const AudiencePage = ({ audienceList = [], user, stageInfo = {}, socket, isAdmin
                 isApplied ? (
                   <div className="bg-indigo-900/40 border-2 border-indigo-500 p-3 rounded-lg relative mb-4">
                     <div className="text-white font-black text-sm truncate pr-10">🎵 {adminArtist} - {adminSong}</div>
-                    <div className="text-indigo-300 text-[10px] font-bold mt-1 truncate pr-10">도전자: {adminChallengerName} <span className="text-gray-400">| {adminChallengeId}</span></div>
+                    <div className="text-indigo-300 text-[10px] font-bold mt-1 truncate pr-10">신청자: {adminChallengerName} <span className="text-gray-400">| {adminChallengeId}</span></div>
                     <button onClick={() => setIsApplied(false)} className="absolute top-2 right-2 text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-colors shadow">수정</button>
                   </div>
                 ) : (

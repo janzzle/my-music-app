@@ -19,7 +19,7 @@ const MyPage = () => {
   const [expandedItems, setExpandedItems] = useState({});
   const toggleExpand = (id) => setExpandedItems(prev => ({ ...prev, [id]: !prev[id] }));
 
-  // 1. 내 도전 신청 내역 실시간 렌더링
+  // 1. 내 선곡 신청 내역 실시간 렌더링
   useEffect(() => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
@@ -213,11 +213,11 @@ const MyPage = () => {
 
       <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-5 md:p-6">
         <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          🎙️ 나의 도전 신청 내역
+          🎙️ 나의 선곡 신청 내역
         </h3>
 
         {myChallenges.length === 0 ? (
-          <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg text-sm md:text-base">아직 신청한 도전곡이 없습니다.</div>
+          <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-lg text-sm md:text-base">아직 신청한 곡이 없습니다.</div>
         ) : (
           <div className="space-y-4">
             {myChallenges.map(item => {

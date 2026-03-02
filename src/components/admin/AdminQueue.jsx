@@ -12,7 +12,7 @@ const AdminQueue = ({
   return (
     <div className="w-full max-w-7xl bg-gray-800 rounded-xl border border-indigo-500/30 p-6 shadow-2xl overflow-hidden mt-6">
       <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2 mb-4">
-        <Mic2 className="w-5 h-5 md:w-6 md:h-6" /> 실시간 도전 신청곡 목록 (대기열)
+        <Mic2 className="w-5 h-5 md:w-6 md:h-6" /> 실시간 신청곡 목록 (대기열)
       </h2>
       <div className="w-full overflow-x-auto border border-gray-700 rounded-lg bg-gray-900 max-h-[700px]">
         <table className="w-full text-left text-sm text-gray-300 min-w-[1000px]">
@@ -21,7 +21,7 @@ const AdminQueue = ({
               <th className="p-3 border-b border-gray-700">날짜&시간</th>
               <th className="p-3 border-b border-gray-700 text-blue-300">가수</th>
               <th className="p-3 border-b border-gray-700 text-white">제목</th>
-              <th className="p-3 border-b border-gray-700 text-center text-indigo-300">신청자(도전자)</th>
+              <th className="p-3 border-b border-gray-700 text-center text-indigo-300">신청자</th>
               <th className="p-3 border-b border-gray-700 text-center">재생 여부</th>
               <th className="p-3 border-b border-gray-700 text-center">같은 곡 이력</th>
               <th className="p-3 border-b border-gray-700 text-center">수정</th>
