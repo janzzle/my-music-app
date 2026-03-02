@@ -73,7 +73,7 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen, user, handleLogout, setIsSignup
                 <button onClick={() => { setIsSignupMode(true); setIsMenuOpen(false); }} className="text-left px-4 py-3 hover:bg-indigo-50 text-indigo-600 font-bold border-b border-gray-100 text-sm">👤 회원가입 / 로그인</button>
               )}
 
-              <button onClick={() => navigateTo('guide')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">📖 이용 가이드</button>
+              <button onClick={() => navigateTo('guide')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">📖 이용가이드</button>
               <button onClick={() => navigateTo('audience')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">🎭 객석 이동</button>
               <button onClick={() => navigateTo('history')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">📅 누적 순위</button>
               <button onClick={() => navigateTo('challenge')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 text-sm border-b border-gray-100">✨ 선곡 신청</button>

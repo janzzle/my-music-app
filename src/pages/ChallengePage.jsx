@@ -298,11 +298,11 @@ const ChallengePage = () => {
               value={message} // 👈 연결
               onChange={(e) => setMessage(e.target.value)} // 👈 연결
               className="w-full p-4 h-40 bg-gray-50 border border-gray-200 rounded-xl focus:border-yellow-500 focus:bg-white focus:ring-2 focus:ring-yellow-200 outline-none resize-none transition-all leading-relaxed"
-              placeholder="이 노래를 추천하는 이유, 가수에 대한 간략한 소개, 
-              가수나 곡과 관련된 에피소드, 곡에 얽힌 나의 이야기를 적어주세요!
+              placeholder="이 곡을 추천하는 이유, 간략한 가수와 곡소개,
+              관련된 에피소드 그리고 곡에 얽힌 나의 이야기를 적어주세요! 
               
               꼭 남들이 모르는 노래가 아니라도 좋아요.
-              모두가 즐길 수 있는 노래라면 환영합니다!"
+              모두가 즐길 수 있다면 환영합니다!"
             ></textarea>
           </div>
 

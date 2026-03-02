@@ -33,7 +33,7 @@ const GuidePage = ({ navigateTo }) => (
         </div>
         
         <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-          <span className="bg-yellow-400 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">pts</span>
+          <span className="bg-yellow-400 text-white w-8 h-8 rounded-lg flex items-center justify-center text-sm">Score</span>
           점수 계산 방식
         </h3>
         
@@ -71,7 +71,7 @@ const GuidePage = ({ navigateTo }) => (
         <div>
           <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Music2 size={24} className="text-pink-500" />
-            <strong>감탄 나오는 선곡</strong>에 자신 있으신가요?<br/>
+            감탄 나오는 선곡에 자신 있으신가요?<br/>
           </h3>
           
           <p className="text-gray-600 text-base mb-6 leading-relaxed">
@@ -86,8 +86,8 @@ const GuidePage = ({ navigateTo }) => (
               선곡 신청 시
             </h4>
             <p className="text-gray-700 text-sm">
-              <strong>추천 이유</strong>와 <strong>가수</strong>나 <strong>곡</strong>에 대한 <strong>간략한 소개</strong>,<br/>
-               재밌는<strong> 비하인드 스토리</strong>그리고 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
+              <strong>추천 이유</strong>와 <strong>가수</strong>나 <strong>곡</strong>에 대한 <strong>간략한 소개</strong><br/>
+              <strong> 비하인드 스토리</strong><br/> 그리고... 곡에 얽힌 <strong>나의 이야기</strong>를 적어주세요.
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ const GuidePage = ({ navigateTo }) => (
           onClick={() => navigateTo('challenge')}
           className="w-full bg-black text-white py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-lg active:scale-95"
         >
-          <span>내 인생곡 신청하러 가기</span>
+          <span>선곡 신청하러 가기</span>
           <ArrowRight size={20} />
         </button>
       </div>
