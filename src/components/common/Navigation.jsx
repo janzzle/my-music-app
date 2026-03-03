@@ -74,9 +74,9 @@ const Navigation = ({ isMenuOpen, setIsMenuOpen, user, handleLogout, setIsSignup
               )}
 
               <button onClick={() => navigateTo('guide')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">📖 이용가이드</button>
-              <button onClick={() => navigateTo('audience')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">🎭 객석 이동</button>
-              <button onClick={() => navigateTo('history')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">📅 누적 순위</button>
-              <button onClick={() => navigateTo('challenge')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 text-sm border-b border-gray-100">✨ 선곡 신청</button>
+              <button onClick={() => navigateTo('audience')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">🎭 객석이동</button>
+              <button onClick={() => navigateTo('history')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 border-b border-gray-100 text-sm">📅 누적순위</button>
+              <button onClick={() => navigateTo('challenge')} className="text-left px-4 py-3 hover:bg-gray-50 text-gray-700 text-sm border-b border-gray-100">✨ 선곡신청</button>
 
               {/* ✅ [수정] 관리자 전용 메뉴 영역 */}
               {isAdmin && (
